@@ -452,19 +452,34 @@ _PERSON_TRAILER_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Inline trailer pattern: a trailer key appearing *anywhere* in the line
+# (e.g. "fix: blahSigned-off-by: Name <email>").
+_INLINE_TRAILER_RE = re.compile(
+    r"([A-Za-z]+(?:-[A-Za-z]+)*-by|Cc)\s*:",
+    re.IGNORECASE,
+)
+
 
 def _clean_subject(raw_subject: str) -> str:
     """
     Return only the first line of a commit subject, stripping any
     Signed-off-by and other "<Word>-by:" trailers that may have been
     appended when git's %s format captured the whole first paragraph.
+    Also cuts the subject at the point where an inline trailer starts,
+    and removes anything shaped like an email address.
     """
     # Split on newlines; take only the first non-empty line.
     lines = raw_subject.splitlines()
     first_line = lines[0].strip() if lines else raw_subject.strip()
-    # Also guard: if the subject itself starts with a trailer, return empty
+    # Guard: if the subject itself starts with a trailer, return empty
     if _PERSON_TRAILER_RE.match(first_line):
         return ""
+    # Cut at any inline trailer (e.g. "fix: blahSigned-off-by: Name <email>")
+    m = _INLINE_TRAILER_RE.search(first_line)
+    if m:
+        first_line = first_line[:m.start()].strip()
+    # Strip anything shaped like an email address
+    first_line = _EMAIL_RE.sub("", first_line).strip()
     return first_line
 
 
