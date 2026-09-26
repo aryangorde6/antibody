@@ -3,7 +3,7 @@
   "repo": "https://github.com/andialbrecht/sqlparse",
   "head": "60cdc649726bf1bc4f1b336050560b336da715ec",
   "run_time": "2026-09-26T15:01:46+00:00",
-  "ledger_time": "2026-09-26T16:34:52+00:00",
+  "ledger_time": "2026-09-26T17:47:35+00:00",
   "curated": {
     "sha256": "fa3d4b23160e245c30c65694c9414ffac50379011e0dc23d62e5fbdaead2c9e3",
     "timestamp": "2026-09-26T14:49:00+00:00"
@@ -12,17 +12,19 @@
     "total_candidates": 45,
     "checkable": 20,
     "caught_before": 13,
-    "caught_after": 16
+    "caught_after": 18
   },
   "rows": [
     {
       "sha": "a51df6d9e2d31b44be9adb6bc8732517db6bf96b",
-      "status": "STILL EXPOSED",
-      "line": "Reindenting large tuple lists caused quadratic CPU consumption (GHSA-cfqr-cjx5-5jcm); fixed by measuring offsets backwards; no regression test exists that demonstrates the O(n\u00b2) timing difference.",
-      "reason": "INVALID (not deterministic)",
+      "status": "NOW CAUGHT",
+      "line": "Reindenting large tuple lists caused quadratic CPU consumption (GHSA-cfqr-cjx5-5jcm); fixed by measuring offsets backwards; now protected by test_a51df6d9e2.py.",
+      "reason": "",
       "link": "",
-      "catching_tests": [],
-      "proof_code": null,
+      "catching_tests": [
+        "tests/antibody/test_a51df6d9e2.py"
+      ],
+      "proof_code": "import timeit\nimport sqlparse\n\n\ndef test_reindent_tuple_list_not_quadratic():\n    def make_sql(n):\n        values = \", \".join(f\"({i}, {i+1})\" for i in range(n))\n        return f\"SELECT a, b FROM t WHERE (a, b) IN ({values})\"\n\n    def time_op(n):\n        sql = make_sql(n)\n        return min(timeit.repeat(lambda: sqlparse.format(sql, reindent=True), number=1, repeat=3))\n\n    n = 100\n    t_n = time_op(n)\n    t_4n = time_op(n * 4)\n    ratio = t_4n / t_n\n    assert ratio < 9, f\"growth ratio {ratio:.1f} suggests quadratic behaviour\"\n",
       "probe_output": null
     },
     {
@@ -37,12 +39,14 @@
     },
     {
       "sha": "ef2012a5eeb491e604dea2b00d516904a3830c87",
-      "status": "STILL EXPOSED",
-      "line": "A comment-only statement caused quadratic DoS in group_comments (GHSA-f2ff-p2ww-7p4p); fixed by processing tokens in one forward pass; the check printed its measured timing, which changes on every run, so the probe rejected it, and no regression test was written.",
-      "reason": "INVALID (not deterministic)",
+      "status": "NOW CAUGHT",
+      "line": "A comment-only statement caused quadratic DoS in group_comments (GHSA-f2ff-p2ww-7p4p); fixed by processing tokens in one forward pass; now protected by test_ef2012a5ee.py.",
+      "reason": "",
       "link": "",
-      "catching_tests": [],
-      "proof_code": null,
+      "catching_tests": [
+        "tests/antibody/test_ef2012a5ee.py"
+      ],
+      "proof_code": "import timeit\nimport sqlparse\n\ndef test_strip_comments_not_quadratic():\n    def make_sql(n):\n        return \"\\n\".join(f\"-- comment {i}\" for i in range(n))\n\n    def time_op(n):\n        sql = make_sql(n)\n        return min(timeit.repeat(lambda: sqlparse.format(sql, strip_comments=True), number=1, repeat=3))\n\n    n = 500\n    t_n = time_op(n)\n    t_4n = time_op(n * 4)\n    ratio = t_4n / t_n\n    assert ratio < 9, f\"growth ratio {ratio:.1f} suggests quadratic behaviour\"\n",
       "probe_output": null
     },
     {

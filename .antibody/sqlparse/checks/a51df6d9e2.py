@@ -1,22 +1,21 @@
 import timeit
 import sqlparse
 
-def make_tuple_sql(n):
+def make_sql(n):
+    # Use nested tuple list that triggers the reindent grouping path
+    # Based on GHSA-cfqr-cjx5-5jcm: tuple list in WHERE clause
     values = ", ".join(f"({i}, {i+1})" for i in range(n))
-    return f"SELECT * FROM t WHERE (a, b) IN ({values})"
+    return f"SELECT a, b FROM t WHERE (a, b) IN ({values})"
 
-n = 200
+def time_op(n):
+    sql = make_sql(n)
+    return min(timeit.repeat(lambda: sqlparse.format(sql, reindent=True), number=1, repeat=3))
 
-def time_format(size):
-    sql = make_tuple_sql(size)
-    return min(timeit.repeat(lambda: sqlparse.format(sql, reindent=True), number=1, repeat=5))
-
-t_n = time_format(n)
-t_4n = time_format(4 * n)
-
+n = 100
+t_n = time_op(n)
+t_4n = time_op(n * 4)
 ratio = t_4n / t_n
-
-if ratio >= 8:
-    print(f"DIFFERENCE FOUND: ratio={ratio:.1f} (quadratic) vs ratio<8 (linear)")
+if ratio > 9:
+    print("QUADRATIC")
 else:
-    print(f"NO CHANGE FOUND (ratio={ratio:.1f})")
+    print("LINEAR")

@@ -176,14 +176,14 @@ footer {
 <body>
 <h1>Antibody &#8212; sqlparse</h1>
 <p class="question">Of the bugs this project already fixed, how many could come back without a test noticing?</p>
-<p class="summary-line">Before: 13 of 20 caught. After: 16 of 20 caught.</p>
+<p class="summary-line">Before: 13 of 20 caught. After: 18 of 20 caught.</p>
 <p class="summary-note">Y = 20: the number of past bugs where the patch applied, tests ran, and a check was possible (CAUGHT + NOW CAUGHT + STILL EXPOSED + NO CHANGE FOUND). Excluded, NO DATA, and NOT A BUG rows are not counted.</p>
 
 <div class="filters" id="filters">
   <button class="filter-btn active" data-filter="all">All (45)</button>
   <button class="filter-btn" data-filter="CAUGHT">Caught (13)</button>
-  <button class="filter-btn" data-filter="NOW CAUGHT">Now Caught (3)</button>
-  <button class="filter-btn" data-filter="STILL EXPOSED">Still Exposed (3)</button>
+  <button class="filter-btn" data-filter="NOW CAUGHT">Now Caught (5)</button>
+  <button class="filter-btn" data-filter="STILL EXPOSED">Still Exposed (1)</button>
   <button class="filter-btn" data-filter="NO CHANGE FOUND">No Change Found (1)</button>
   <button class="filter-btn" data-filter="NO DATA">No Data (19)</button>
   <button class="filter-btn" data-filter="NOT A BUG">Not a Bug (3)</button>
@@ -203,9 +203,43 @@ footer {
 </tr>
 </thead>
 <tbody id="rows-body">
-<tr data-status="STILL EXPOSED" data-sha="a51df6d9e2d31b44be9adb6bc8732517db6bf96b" data-subject="Reindenting large tuple lists caused quadratic CPU consumption (GHSA-cfqr-cjx5-5jcm); fixed by measuring offsets backwards; no regression test exists that demonstrates the O(n²) timing difference."><td><span class="badge badge-exposed" data-status="STILL EXPOSED">STILL EXPOSED</span></td><td>Reindenting large tuple lists caused quadratic CPU consumption (GHSA-cfqr-cjx5-5jcm); fixed by measuring offsets backwards; no regression test exists that demonstrates the O(n²) timing difference.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Note:</strong> INVALID (not deterministic)</p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/a51df6d9e2d31b44be9adb6bc8732517db6bf96b" target="_blank" rel="noopener">a51df6d9</a></td><td></td></tr>
+<tr data-status="NOW CAUGHT" data-sha="a51df6d9e2d31b44be9adb6bc8732517db6bf96b" data-subject="Reindenting large tuple lists caused quadratic CPU consumption (GHSA-cfqr-cjx5-5jcm); fixed by measuring offsets backwards; now protected by test_a51df6d9e2.py."><td><span class="badge badge-now-caught" data-status="NOW CAUGHT">NOW CAUGHT</span></td><td>Reindenting large tuple lists caused quadratic CPU consumption (GHSA-cfqr-cjx5-5jcm); fixed by measuring offsets backwards; now protected by test_a51df6d9e2.py.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/antibody/test_a51df6d9e2.py</div></p><p style='margin:.3rem 0'><strong>New test:</strong><pre>import timeit
+import sqlparse
+
+
+def test_reindent_tuple_list_not_quadratic():
+    def make_sql(n):
+        values = &quot;, &quot;.join(f&quot;({i}, {i+1})&quot; for i in range(n))
+        return f&quot;SELECT a, b FROM t WHERE (a, b) IN ({values})&quot;
+
+    def time_op(n):
+        sql = make_sql(n)
+        return min(timeit.repeat(lambda: sqlparse.format(sql, reindent=True), number=1, repeat=3))
+
+    n = 100
+    t_n = time_op(n)
+    t_4n = time_op(n * 4)
+    ratio = t_4n / t_n
+    assert ratio &lt; 9, f&quot;growth ratio {ratio:.1f} suggests quadratic behaviour&quot;
+</pre></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/a51df6d9e2d31b44be9adb6bc8732517db6bf96b" target="_blank" rel="noopener">a51df6d9</a></td><td></td></tr>
 <tr data-status="NO DATA" data-sha="d1d80602741f77ec78e5a04ce4719244cf32352e" data-subject="Dollar-quoted literals and multiline comments triggered O(n²) re-scanning on adversarial input (GHSA-prg7-hcfm-mfcr); fixed by a pre-processing pass; code has since moved so the fix cannot be probed against its original location."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Dollar-quoted literals and multiline comments triggered O(n²) re-scanning on adversarial input (GHSA-prg7-hcfm-mfcr); fixed by a pre-processing pass; code has since moved so the fix cannot be probed against its original location.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/d1d80602741f77ec78e5a04ce4719244cf32352e" target="_blank" rel="noopener">d1d80602</a></td><td></td></tr>
-<tr data-status="STILL EXPOSED" data-sha="ef2012a5eeb491e604dea2b00d516904a3830c87" data-subject="A comment-only statement caused quadratic DoS in group_comments (GHSA-f2ff-p2ww-7p4p); fixed by processing tokens in one forward pass; the check printed its measured timing, which changes on every run, so the probe rejected it, and no regression test was written."><td><span class="badge badge-exposed" data-status="STILL EXPOSED">STILL EXPOSED</span></td><td>A comment-only statement caused quadratic DoS in group_comments (GHSA-f2ff-p2ww-7p4p); fixed by processing tokens in one forward pass; the check printed its measured timing, which changes on every run, so the probe rejected it, and no regression test was written.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Note:</strong> INVALID (not deterministic)</p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/ef2012a5eeb491e604dea2b00d516904a3830c87" target="_blank" rel="noopener">ef2012a5</a></td><td></td></tr>
+<tr data-status="NOW CAUGHT" data-sha="ef2012a5eeb491e604dea2b00d516904a3830c87" data-subject="A comment-only statement caused quadratic DoS in group_comments (GHSA-f2ff-p2ww-7p4p); fixed by processing tokens in one forward pass; now protected by test_ef2012a5ee.py."><td><span class="badge badge-now-caught" data-status="NOW CAUGHT">NOW CAUGHT</span></td><td>A comment-only statement caused quadratic DoS in group_comments (GHSA-f2ff-p2ww-7p4p); fixed by processing tokens in one forward pass; now protected by test_ef2012a5ee.py.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/antibody/test_ef2012a5ee.py</div></p><p style='margin:.3rem 0'><strong>New test:</strong><pre>import timeit
+import sqlparse
+
+def test_strip_comments_not_quadratic():
+    def make_sql(n):
+        return &quot;\n&quot;.join(f&quot;-- comment {i}&quot; for i in range(n))
+
+    def time_op(n):
+        sql = make_sql(n)
+        return min(timeit.repeat(lambda: sqlparse.format(sql, strip_comments=True), number=1, repeat=3))
+
+    n = 500
+    t_n = time_op(n)
+    t_4n = time_op(n * 4)
+    ratio = t_4n / t_n
+    assert ratio &lt; 9, f&quot;growth ratio {ratio:.1f} suggests quadratic behaviour&quot;
+</pre></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/ef2012a5eeb491e604dea2b00d516904a3830c87" target="_blank" rel="noopener">ef2012a5</a></td><td></td></tr>
 <tr data-status="CAUGHT" data-sha="a194d3187b04b0aed7a935c3401f068236fb6264" data-subject="A BETWEEN bound written as a leading-dot float (e.g. .03) demoted the preceding keyword from Keyword to Name; fixed by adding the pattern to the keyword regex; caught by an existing test."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>A BETWEEN bound written as a leading-dot float (e.g. .03) demoted the preceding keyword from Keyword to Name; fixed by adding the pattern to the keyword regex; caught by an existing test.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_regressions.py::test_between_leading_dot_float_issue601[a BETWEEN .03 AND .06]</div><div class="test-id">tests/test_regressions.py::test_between_leading_dot_float_issue601[a between .03 and .06]</div></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/a194d3187b04b0aed7a935c3401f068236fb6264" target="_blank" rel="noopener">a194d318</a></td><td></td></tr>
 <tr data-status="CAUGHT" data-sha="f66d12c245412f28c58f045b646eb53c0e691b8b" data-subject="get_real_name() returned the wrong component for identifiers with more than two dotted parts (e.g. db.schema.tbl.col returned &#x27;schema&#x27; instead of &#x27;col&#x27;); fixed by iterating to the last real name; caught by an existing test."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>get_real_name() returned the wrong component for identifiers with more than two dotted parts (e.g. db.schema.tbl.col returned &#x27;schema&#x27; instead of &#x27;col&#x27;); fixed by iterating to the last real name; caught by an existing test.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_parse.py::test_get_real_name_multi_part_dotted</div></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/f66d12c245412f28c58f045b646eb53c0e691b8b" target="_blank" rel="noopener">f66d12c2</a></td><td></td></tr>
 <tr data-status="CAUGHT" data-sha="ac3b9e0b25627feb42a7053074b6549df81dcfaf" data-subject="MATERIALIZED was tokenised as Name instead of Keyword, leaving it unaffected by keyword_case formatting; fixed by adding it to KEYWORDS; caught by an existing test."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>MATERIALIZED was tokenised as Name instead of Keyword, leaving it unaffected by keyword_case formatting; fixed by adding it to KEYWORDS; caught by an existing test.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_regressions.py::test_materialized_view_issue752</div></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/ac3b9e0b25627feb42a7053074b6549df81dcfaf" target="_blank" rel="noopener">ac3b9e0b</a></td><td></td></tr>
