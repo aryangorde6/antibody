@@ -5,8 +5,8 @@
 The table below was derived by running:
 
 ```
-grep -rnE '^> \*\*(write_file|apply_diff|search_and_replace|insert_content)\*\* — ' bob_sessions/ \
-  | sed -E 's#^bob_sessions/([0-9]+b?)-[^/]*/bob-task-([0-9a-f]{8})[^:]:[0-9]+:> \S+ #\1 \2 #' \
+grep -rnE '^> .*\*\*(write_file|apply_diff|search_and_replace|insert_content)\*\* — ' bob_sessions/ \
+  | sed -E 's#^bob_sessions/([0-9]+b?)-[^/]*/bob-task-([0-9a-f]{8})[^:]*:[0-9]+:> \S+ #\1 \2 #' \
   | sort -u
 ```
 
@@ -15,11 +15,11 @@ In tasks 01 and 02 these are edits to files the same task names elsewhere in its
 For task 04, paths were retrieved with:
 
 ```
-grep -h '[x] Create' bob_sessions/04-mode-skill/*.md | sort -u
+grep -h '\[x\] Create' bob_sessions/04-mode-skill/*.md | sort -u
 ```
 
 The folder `bob_sessions/03-ledger-gate/` holds two tasks: **03** (task id `a5d4f98e`) and **03b** (task id `0baf8d72`).
-**05b** is a second, shorter audit task (task id `c0c55b61`).
+**05b** is a second, shorter audit task (task id `c0c55b61`), and **06** wrote this file and README.md (task id `e8127dd7`).
 
 | File | Task(s) |
 |------|---------|
@@ -27,6 +27,7 @@ The folder `bob_sessions/03-ledger-gate/` holds two tasks: **03** (task id `a5d4
 | `.antibody/sqlparse/curated.json` | 05 |
 | `.antibody/sqlparse/explanations.json` | 05, 05b |
 | `.antibody/sqlparse-ref/setup.json` | 01 |
+| `BOB.md` | 06 |
 | `.bob/custom_modes.yaml` | 04 |
 | `.bob/rules-antibody/01-invariants.md` | 04 |
 | `.bob/rules-antibody/02-banned-claims.md` | 04 |
@@ -38,6 +39,7 @@ The folder `bob_sessions/03-ledger-gate/` holds two tasks: **03** (task id `a5d4
 | `.bob/skills/recurrence-audit/test-writing-guide.md` | 04 |
 | `.github/workflows/antibody.yml` | 03 |
 | `.gitignore` | 01 |
+| `README.md` | 06 |
 | `tests/test_gate.py` | 03 |
 | `tests/test_probe_prove.py` | 02 |
 | `tests/test_runner.py` | 01 |
@@ -67,7 +69,7 @@ Proven tests, which the runner copied into the repository:
 - `audits/sqlparse/test_ef2012a5ee.py` (task 05b)
 
 In task 05 the subagent for `e58781dd63` wrote a test that still passed with the bug back, so it was not proven.
-Three fixes (`a51df6d9e2`, `ef2012a5ee`, `8c24779e02`) were cancelled mid-work when a message was sent to the task.
+The subagents for three fixes (`a51df6d9e2`, `ef2012a5ee`, `8c24779e02`) were cancelled mid-work when a message was sent to the task.
 Task 05b re-attempted `a51df6d9e2` and `ef2012a5ee` — their first checks printed a measured time, which changes every run, so the probe rejected them — and proved both.
 
 ## Edited by hand
@@ -83,3 +85,5 @@ These changes to Bob's files were made by hand, not by Bob.
 **After task 05** (commit `a094b2b`): three lines in `.antibody/sqlparse/explanations.json` corrected: `8c24779e02` no longer ends "still exposed" (its status is `NO CHANGE FOUND`); `e58781dd63` no longer says the reverse patch can't be applied (it applies; `INDICATOR` is in a second keyword table, so nothing changes); `ef2012a5ee` no longer says timing is too noisy for a test (the check printed a changing number). The ledger was republished with them (same numbers).
 
 **After task 05b:** `antibody-accepted.yaml` written by hand (one entry, `e58781dd63`, with the reason); and in `antibody.py`'s page style, links use the accent colour and, under 480 px, cells pad less and badges wrap, so the table fits a phone; the sqlparse page was re-rendered from the same `ledger.json`.
+
+**After task 06:** in this file, the two commands above restored to the ones actually run (their escaping was lost), the task 06 rows and sentence added, and "the subagents for three fixes" instead of "three fixes"; in README.md, the opening sentence (it claimed "most projects never check", which nothing here measures).

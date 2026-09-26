@@ -1,6 +1,6 @@
 # Antibody
 
-Software projects accumulate bug fixes, but most projects never check whether those fixes are actually protected by tests.
+Every project fixes bugs, but a fix only stays fixed if some test notices when it goes away.
 Antibody puts a project's past bug fixes back, one at a time, on today's code and runs the project's own tests; if no test notices a fix being taken out, that bug can come back unnoticed.
 
 ## Result on sqlparse
