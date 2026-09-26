@@ -1,0 +1,6 @@
+{
+  "verdict": "NO CHANGE FOUND",
+  "check": "/home/aryan/ibm_bob_hack/antibody/.antibody/sqlparse/checks/8c24779e02.py",
+  "output_with_fix": "DIFFERENCE FOUND: indents=[0, 7] vs all-equal\n",
+  "output_without_fix": "DIFFERENCE FOUND: indents=[0, 7] vs all-equal\n"
+}

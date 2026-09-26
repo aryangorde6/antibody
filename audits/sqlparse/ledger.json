@@ -1,0 +1,512 @@
+{
+  "name": "sqlparse",
+  "repo": "https://github.com/andialbrecht/sqlparse",
+  "head": "60cdc649726bf1bc4f1b336050560b336da715ec",
+  "run_time": "2026-09-26T15:01:46+00:00",
+  "ledger_time": "2026-09-26T15:06:06+00:00",
+  "curated": {
+    "sha256": "fa3d4b23160e245c30c65694c9414ffac50379011e0dc23d62e5fbdaead2c9e3",
+    "timestamp": "2026-09-26T14:49:00+00:00"
+  },
+  "stats": {
+    "total_candidates": 45,
+    "checkable": 20,
+    "caught_before": 13,
+    "caught_after": 16
+  },
+  "rows": [
+    {
+      "sha": "a51df6d9e2d31b44be9adb6bc8732517db6bf96b",
+      "status": "STILL EXPOSED",
+      "line": "Reindenting large tuple lists caused quadratic CPU consumption (GHSA-cfqr-cjx5-5jcm); fixed by measuring offsets backwards; no regression test exists that demonstrates the O(n\u00b2) timing difference.",
+      "reason": "INVALID (not deterministic)",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "d1d80602741f77ec78e5a04ce4719244cf32352e",
+      "status": "NO DATA",
+      "line": "Dollar-quoted literals and multiline comments triggered O(n\u00b2) re-scanning on adversarial input (GHSA-prg7-hcfm-mfcr); fixed by a pre-processing pass; code has since moved so the fix cannot be probed against its original location.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "ef2012a5eeb491e604dea2b00d516904a3830c87",
+      "status": "STILL EXPOSED",
+      "line": "A comment-only statement caused quadratic DoS in group_comments (GHSA-f2ff-p2ww-7p4p); fixed by processing tokens in one forward pass; the timing signal is too noisy to distinguish reliably in a regression test.",
+      "reason": "INVALID (not deterministic)",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "a194d3187b04b0aed7a935c3401f068236fb6264",
+      "status": "CAUGHT",
+      "line": "A BETWEEN bound written as a leading-dot float (e.g. .03) demoted the preceding keyword from Keyword to Name; fixed by adding the pattern to the keyword regex; caught by an existing test.",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_regressions.py::test_between_leading_dot_float_issue601[a BETWEEN .03 AND .06]",
+        "tests/test_regressions.py::test_between_leading_dot_float_issue601[a between .03 and .06]"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "f66d12c245412f28c58f045b646eb53c0e691b8b",
+      "status": "CAUGHT",
+      "line": "get_real_name() returned the wrong component for identifiers with more than two dotted parts (e.g. db.schema.tbl.col returned 'schema' instead of 'col'); fixed by iterating to the last real name; caught by an existing test.",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_parse.py::test_get_real_name_multi_part_dotted"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "ac3b9e0b25627feb42a7053074b6549df81dcfaf",
+      "status": "CAUGHT",
+      "line": "MATERIALIZED was tokenised as Name instead of Keyword, leaving it unaffected by keyword_case formatting; fixed by adding it to KEYWORDS; caught by an existing test.",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_regressions.py::test_materialized_view_issue752"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "111b35cffcfe44b16fbdd27507f165bafd52a2a1",
+      "status": "CAUGHT",
+      "line": "Lowercase 'as' in CREATE TABLE AS SELECT left has_as False, causing the function-grouping guard to fire and skip all function grouping; fixed by case-folding the check; caught by an existing test.",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_grouping.py::test_grouping_alias_ctas_lowercase_as"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "26d7d652218757828b64cfe7914660d529ab21e3",
+      "status": "CAUGHT",
+      "line": "ROW_FORMAT was tokenised as Name, causing the grouper to treat it as a table alias; fixed by adding it to KEYWORDS; caught by an existing test.",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_regressions.py::test_alter_table_row_format_issue773"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "8f978caa7cc777d845d358bfc82ea30110395d32",
+      "status": "NO DATA",
+      "line": "Anonymous BEGIN...END blocks were incorrectly split into multiple statements; fixed by a stack-based splitter rewrite; code has since moved so the fix cannot be probed against its original location.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "da67ac16b8fa2c5041458bee728c8a914bed2d37",
+      "status": "NO DATA",
+      "line": "When the grouping-limit was exceeded, functions silently returned None instead of raising SQLParseError; fixed by adding an explicit error raise; code has since moved.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "5ca50a2ee9b39e9efeea33e01f132d628144fb69",
+      "status": "NO DATA",
+      "line": "BEGIN TRANSACTION...END TRANSACTION blocks were not split correctly, a regression introduced in v0.5.4; fixed by handling the TRANSACTION keyword; code has since moved.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "1a3bfbd50b82c05d9adcc51bacba059671dc1bc7",
+      "status": "NO DATA",
+      "line": "Semicolons inside BEGIN...END blocks were treated as statement terminators, splitting a single statement into multiple fragments; fixed by tracking block depth; code has since moved.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "e92a032c81d51a6645b4f8c32470481894818ba0",
+      "status": "NO DATA",
+      "line": "IF EXISTS inside a BEGIN...END block caused incorrect statement merging; fixed by adding IF to the keyword table for the splitter; code has since moved.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "73c8ba3ae88b608d39740c0776fb15064232258e",
+      "status": "CAUGHT",
+      "line": "strip_comments=True left a stray '--B' token when the statement contained only comments; fixed by a one-line filter correction; caught by an existing test.",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_format.py::TestFormat::test_strip_comments_single"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "31903e09db518ee3969110073427196ef9cd46c3",
+      "status": "NOT A BUG",
+      "line": "Add pre-commit hook support (fixes #537)",
+      "reason": "This is a feature addition for pre-commit hook support rather than a behavioral bug fix; it adds new CLI functionality and does not alter existing parsing or formatting logic.",
+      "link": "https://github.com/andialbrecht/sqlparse/issues/537",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "f1d2d688bc542ee2645f8ecdf8f7bd9488a96136",
+      "status": "EXCLUDED",
+      "line": "Add type annotations to public API functions",
+      "reason": "non-behavioural: Source changes are identical after stripping non-behavioural elements",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "694747fdbed387e05ba6904ed89183a42bb7c843",
+      "status": "NOW CAUGHT",
+      "line": "ATTACH and DETACH were not in KEYWORDS_PLPGSQL, so PostgreSQL ALTER TABLE DETACH PARTITION statements parsed them as Name tokens; fixed by adding the two keywords; now protected by test_694747fdbe.py.",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/antibody/test_694747fdbe.py"
+      ],
+      "proof_code": "import sqlparse\nfrom sqlparse import tokens as T\n\n\ndef test_attach_detach_are_keywords():\n    # ATTACH and DETACH should be recognized as Keyword tokens in PostgreSQL dialect\n    for word, sql in [\n        (\"DETACH\", \"ALTER TABLE atable DETACH PARTITION atable_p00\"),\n        (\"ATTACH\", \"ALTER INDEX atable_acolumn_idx ATTACH PARTITION atable_p01_acolumn_idx\"),\n    ]:\n        parsed = sqlparse.parse(sql)[0]\n        found_type = None\n        for token in parsed.flatten():\n            if token.normalized.upper() == word:\n                found_type = token.ttype\n                break\n        assert found_type == T.Keyword, (\n            f\"Expected {word} to have token type {T.Keyword}, got {found_type}\"\n        )\n",
+      "probe_output": null
+    },
+    {
+      "sha": "274310956473601f53f8d0b7e9024f364b5f04b6",
+      "status": "EXCLUDED",
+      "line": "Fixed 'trailing' typo in split method documentation",
+      "reason": "non-behavioural: Source changes are identical after stripping non-behavioural elements",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "8eb778ca73c4b297b9319488835df295ef815e7e",
+      "status": "EXCLUDED",
+      "line": "[fix] issue262 adding comment and tests",
+      "reason": "non-behavioural: Source changes are identical after stripping non-behavioural elements",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "af6df6c6627b5fcf98bc7bb46f780e1fa0d1a7ef",
+      "status": "NO DATA",
+      "line": "SQL hints (/*+ ... */) were deleted by strip_comments, causing loss of query optimiser hints; fixed by preserving hint-style block comments; code has since moved.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "e48000a5d76ff4d762821708f99ca90962e25f46",
+      "status": "NOW CAUGHT",
+      "line": "EXTENSION was tokenised as Identifier rather than Keyword, producing wrong token types in DROP/CREATE EXTENSION statements; fixed by adding it to KEYWORDS; now protected by test_e48000a5d7.py.",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/antibody/test_e48000a5d7.py"
+      ],
+      "proof_code": "import sqlparse\nfrom sqlparse import tokens as T\n\n\ndef test_extension_tokenized_as_keyword():\n    \"\"\"EXTENSION should be tokenized as a Keyword, not part of an Identifier.\"\"\"\n    stmt = \"DROP EXTENSION pgcrypto\"\n    parsed = sqlparse.parse(stmt)[0]\n\n    extension_token = None\n    for token in parsed.flatten():\n        if token.normalized.upper() == 'EXTENSION':\n            extension_token = token\n            break\n\n    assert extension_token is not None, \"EXTENSION token not found in parsed statement\"\n    assert extension_token.ttype is T.Keyword, (\n        f\"Expected EXTENSION to have ttype {T.Keyword}, got {extension_token.ttype}\"\n    )\n",
+      "probe_output": null
+    },
+    {
+      "sha": "b126ba5b2004474e9ad899456c077f976b761319",
+      "status": "NO DATA",
+      "line": "ASC/DESC NULLS FIRST/LAST were tokenised inconsistently, breaking ORDER BY formatting; fixed by adding NULLS FIRST/LAST as compound keywords; code has since moved.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "0c4902f3f7aafa8c2e63a375ec307c210842f543",
+      "status": "CAUGHT",
+      "line": "strip_whitespace=True failed to descend into sub-groups (e.g. CTE parentheses), leaving trailing spaces inside nested tokens; fixed by recursing into sub-groups; caught by an existing test.",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_format.py::test_strip_ws_removes_trailing_ws_in_groups"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "791e25de46f443597d99314cfd1a68217bcaf970",
+      "status": "NO DATA",
+      "line": "Multiple CASE clauses inside a BEGIN block caused a single statement to be split into several; fixed by tracking CASE depth in the splitter; code has since moved.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "bf74d8bc2c572b978997f7785747ad262025566c",
+      "status": "NO DATA",
+      "line": "No compact formatting option existed, leaving users with no way to suppress excessive newlines; fixed by adding reindent_aligned/compact; code has since moved.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "8b0342730b2e53dcc7887e5b4563d479444ec0ba",
+      "status": "NO DATA",
+      "line": "Stripping an inline comment directly adjacent to a value fused it with the next keyword (e.g. '1AS foo'); fixed by preserving grouping boundaries in Comment handling; code has since moved.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "e03b74e608b71dd06824c2cb42421c0d790248e3",
+      "status": "CAUGHT",
+      "line": "Function.get_parameters() raised an error when the function had an OVER clause because it assumed the last token was always a Parenthesis; fixed by stopping at the first Parenthesis; caught by an existing test.",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_grouping.py::test_grouping_function"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "617b8f6cd3c55bacf2c80130901508518753f7e1",
+      "status": "NO DATA",
+      "line": "Window functions were not grouped with their OVER clause into a single Identifier; fixed by adding OVER-clause grouping; code has since moved.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "46971e5a804b29e7dbd437155a8ceffab8ef1cd5",
+      "status": "CAUGHT",
+      "line": "PRIMARY KEY was not recognised as a compound keyword, producing incorrect token structure in CREATE TABLE statements; fixed by adding a regex pattern; caught by an existing test.",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_regressions.py::test_primary_key_issue740"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "d76e8a4425d82a6cd704b5e549a8cabefa931341",
+      "status": "NOW CAUGHT",
+      "line": "TRUNCATE was classified as DML instead of DDL, and GRANT/REVOKE as DML instead of DCL, causing ttype checks to return wrong results; fixed by correcting the keyword classifications; now protected by test_d76e8a4425.py.",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/antibody/test_d76e8a4425.py"
+      ],
+      "proof_code": "import sqlparse\nfrom sqlparse import tokens as T\n\n\ndef test_truncate_ddl_grant_revoke_dcl():\n    \"\"\"TRUNCATE should be Keyword.DDL; GRANT and REVOKE should be Keyword.DCL.\"\"\"\n    def first_ttype(sql):\n        return sqlparse.parse(sql)[0].tokens[0].ttype\n\n    truncate_ttype = first_ttype(\"TRUNCATE\")\n    grant_ttype = first_ttype(\"GRANT\")\n    revoke_ttype = first_ttype(\"REVOKE\")\n\n    assert truncate_ttype == T.Keyword.DDL, (\n        f\"TRUNCATE ttype is {truncate_ttype}, expected {T.Keyword.DDL}\"\n    )\n    assert grant_ttype == T.Keyword.DCL, (\n        f\"GRANT ttype is {grant_ttype}, expected {T.Keyword.DCL}\"\n    )\n    assert revoke_ttype == T.Keyword.DCL, (\n        f\"REVOKE ttype is {revoke_ttype}, expected {T.Keyword.DCL}\"\n    )\n",
+      "probe_output": null
+    },
+    {
+      "sha": "8c24779e027e92a1ed379fc271e20f540b0f3d20",
+      "status": "NO CHANGE FOUND",
+      "line": "JSON operators (-> and ->>) in SELECT caused incorrect reindent alignment; fixed by grouping JSON-operator expressions before indenting; the check found no observable difference in current code \u2014 still exposed.",
+      "reason": "check: /home/aryan/ibm_bob_hack/antibody/.antibody/sqlparse/checks/8c24779e02.py",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": {
+        "check": "/home/aryan/ibm_bob_hack/antibody/.antibody/sqlparse/checks/8c24779e02.py",
+        "with_fix": "DIFFERENCE FOUND: indents=[0, 7] vs all-equal\n",
+        "without_fix": "DIFFERENCE FOUND: indents=[0, 7] vs all-equal\n"
+      }
+    },
+    {
+      "sha": "6b05583f119224a43f8047159120edd0228ebd76",
+      "status": "CAUGHT",
+      "line": "The -> operator was not recognised as a single token, so use_space_around_operators=True split it and produced invalid SQL; fixed by adding JSON-operator patterns; caught by an existing test.",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_format.py::test_format_json_ops",
+        "tests/test_parse.py::test_json_operators[->]",
+        "tests/test_parse.py::test_json_operators[->>]",
+        "tests/test_parse.py::test_json_operators[#>]",
+        "tests/test_parse.py::test_json_operators[#>>]",
+        "tests/test_parse.py::test_json_operators[@>]",
+        "tests/test_parse.py::test_json_operators[<@]"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "5bb129d3fc8a4d031bd37fab8e5ee24a199a9b8c",
+      "status": "NO DATA",
+      "line": "The Lexer singleton was stored before keywords were fully loaded, causing intermittent failures in multi-threaded use; fixed by acquiring a lock during initialisation; code has since moved.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "7334ac99152d02bb09ab0abe79377174c2867f7c",
+      "status": "NO DATA",
+      "line": "Statements following a GO keyword in Transact-SQL were typed as UNKNOWN instead of their true DML type; fixed by treating GO as a statement splitter; code has since moved.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "39b5a02551de051b1e888135fe71759d5b49a134",
+      "status": "CAUGHT",
+      "line": "group_order() was not recursive, so ORDER BY modifiers (DESC) inside sub-queries were not grouped; fixed by adding the @recurse decorator; caught by an existing test.",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_grouping.py::test_grouping_nested_identifier_with_order"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "fac38cd03bea712e096222f16199a7482a4837da",
+      "status": "CAUGHT",
+      "line": "copy.deepcopy() on a parsed statement raised TypeError because _TokenType.__deepcopy__ was missing and the class matched as callable; fixed by ignoring dunder attributes in __getattr__; caught by an existing test.",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_regressions.py::test_copy_issue672"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "fc76056fb8f0ec713a3f2a2b6206a3336932c382",
+      "status": "NOT A BUG",
+      "line": "Cleanup regex for detecting keywords (fixes #709).",
+      "reason": "Redundant characters in regular expression removed; the pattern matches the same input with simplified syntax and produces no different output.",
+      "link": "https://github.com/andialbrecht/sqlparse/issues/709",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "dd9d5b91d7aa30e4a000d5370f09dc99378891dc",
+      "status": "CAUGHT",
+      "line": "get_type() returned UNKNOWN when a comment appeared between the WITH keyword and the CTE identifier; fixed by skipping comment tokens in the type-detection walk; caught by an existing test.",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_regressions.py::test_comment_between_cte_clauses_issue632"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "8b789f286e1b6cbf05c15020ea7544cb7f02f8f7",
+      "status": "NOT A BUG",
+      "line": "Switch to pyproject.toml (fixes #685).",
+      "reason": "Switches packaging configuration from setup.py to pyproject.toml with no impact on library runtime behavior.",
+      "link": "https://github.com/andialbrecht/sqlparse/issues/685",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "e9241945801808d1db7f76bdccbbe9a200042c37",
+      "status": "NO DATA",
+      "line": "The IN keyword was not uppercased by keyword_case='upper' after a regression introduced in 0.4.0; fixed by reverting the erroneous Comparison classification; code has since moved.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "b72a8ff42f53cba0517b1dd9e8af051b4a060ecf",
+      "status": "NO DATA",
+      "line": "Unicode characters outside the ASCII range (e.g. Chinese ideographs) were not recognised as valid identifier characters, breaking reindentation; fixed by using \\w in the regex; code has since moved.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "403de6fc648ac4e012b60b49161c3f5f36dc944a",
+      "status": "NO DATA",
+      "line": "Lowercase 'create table' statements were not parsed correctly because keyword comparisons lacked .upper() calls; fixed by normalising case; code has since moved.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "0bbfd5f8326fd4291c390858ba8ff482ff5ced70",
+      "status": "NO DATA",
+      "line": "DISTINCTROW (an MS Access keyword) was not in the keyword table, so it was tokenised as a Name; fixed by adding it to KEYWORDS; code has since moved.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "e58781dd632584c783ef082257309ea5efdb6750",
+      "status": "STILL EXPOSED",
+      "line": "The INDICATOR keyword was misspelled as 'INDITCATOR' in the keywords dict, making it unrecognised; fixed by correcting the typo; the reverse patch cannot be applied because the keyword now appears at multiple locations in the file.",
+      "reason": "INCONCLUSIVE (data-only change)",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "e66046785b816e5c2d22f101f36faefd19c4a771",
+      "status": "NO DATA",
+      "line": "The scientific-notation regex used \\d* (zero-or-more), causing aliases like 'e2' to be misclassified as float literals; fixed by changing to \\d+; code has since moved.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    }
+  ]
+}

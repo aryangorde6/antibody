@@ -1,0 +1,6 @@
+{
+  "verdict": "INVALID (not deterministic)",
+  "check": "/home/aryan/ibm_bob_hack/antibody/.antibody/sqlparse/checks/a51df6d9e2.py",
+  "output_with_fix": null,
+  "output_without_fix": null
+}

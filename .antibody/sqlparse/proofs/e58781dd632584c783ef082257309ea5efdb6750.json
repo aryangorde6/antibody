@@ -1,0 +1,34 @@
+{
+  "verdict": "NOT PROVEN",
+  "test": "tests/antibody/test_e58781dd63.py",
+  "step": "step 2 run 1: test still passes with bug back",
+  "runs_with_fix": [
+    {
+      "run": 1,
+      "collected": 1,
+      "failed": [],
+      "output": "============================= test session starts ==============================\nplatform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- /home/aryan/ibm_bob_hack/antibody/targets/.venvs/sqlparse/bin/python\nrootdir: /home/aryan/ibm_bob_hack/antibody/targets/sqlparse\nconfigfile: pyproject.toml\ncollecting ... collected 1 item\n\ntests/antibody/test_e58781dd63.py::test_indicator_keyword_token_type PASSED [100%]\n\n============================== 1 passed in 0.09s ===============================\n"
+    },
+    {
+      "run": 2,
+      "collected": 1,
+      "failed": [],
+      "output": "============================= test session starts ==============================\nplatform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- /home/aryan/ibm_bob_hack/antibody/targets/.venvs/sqlparse/bin/python\nrootdir: /home/aryan/ibm_bob_hack/antibody/targets/sqlparse\nconfigfile: pyproject.toml\ncollecting ... collected 1 item\n\ntests/antibody/test_e58781dd63.py::test_indicator_keyword_token_type PASSED [100%]\n\n============================== 1 passed in 0.06s ===============================\n"
+    },
+    {
+      "run": 3,
+      "collected": 1,
+      "failed": [],
+      "output": "============================= test session starts ==============================\nplatform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- /home/aryan/ibm_bob_hack/antibody/targets/.venvs/sqlparse/bin/python\nrootdir: /home/aryan/ibm_bob_hack/antibody/targets/sqlparse\nconfigfile: pyproject.toml\ncollecting ... collected 1 item\n\ntests/antibody/test_e58781dd63.py::test_indicator_keyword_token_type PASSED [100%]\n\n============================== 1 passed in 0.06s ===============================\n"
+    }
+  ],
+  "runs_without_fix": [
+    {
+      "run": 1,
+      "collected": 1,
+      "failed": [],
+      "output": "============================= test session starts ==============================\nplatform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- /home/aryan/ibm_bob_hack/antibody/targets/.venvs/sqlparse/bin/python\nrootdir: /home/aryan/ibm_bob_hack/antibody/targets/sqlparse\nconfigfile: pyproject.toml\ncollecting ... collected 1 item\n\ntests/antibody/test_e58781dd63.py::test_indicator_keyword_token_type PASSED [100%]\n\n============================== 1 passed in 0.06s ===============================\n"
+    }
+  ],
+  "failure_messages": []
+}

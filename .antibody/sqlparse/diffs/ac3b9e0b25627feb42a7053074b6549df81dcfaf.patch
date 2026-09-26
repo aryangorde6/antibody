@@ -1,0 +1,12 @@
+diff --git a/sqlparse/keywords.py b/sqlparse/keywords.py
+index 4bafcda..631aa2e 100644
+--- a/sqlparse/keywords.py
++++ b/sqlparse/keywords.py
+@@ -359,6 +359,7 @@ KEYWORDS = {
+     # 'M': tokens.Keyword,
+     'MAP': tokens.Keyword,
+     'MATCH': tokens.Keyword,
++    'MATERIALIZED': tokens.Keyword,
+     'MAXEXTENTS': tokens.Keyword,
+     'MAXVALUE': tokens.Keyword,
+     'MESSAGE_LENGTH': tokens.Keyword,

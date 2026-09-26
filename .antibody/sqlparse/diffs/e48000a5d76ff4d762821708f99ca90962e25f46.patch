@@ -1,0 +1,12 @@
+diff --git a/sqlparse/keywords.py b/sqlparse/keywords.py
+index dfafedb..6211e82 100644
+--- a/sqlparse/keywords.py
++++ b/sqlparse/keywords.py
+@@ -846,6 +846,7 @@ KEYWORDS_PLPGSQL = {
+     'INHERIT': tokens.Keyword,
+     'INDEXES': tokens.Keyword,
+     'ON_ERROR_STOP': tokens.Keyword,
++    'EXTENSION': tokens.Keyword,
+ 
+     'BYTEA': tokens.Keyword,
+     'BIGSERIAL': tokens.Keyword,

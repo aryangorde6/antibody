@@ -1,0 +1,6 @@
+{
+  "verdict": "CHANGED",
+  "check": "/home/aryan/ibm_bob_hack/antibody/.antibody/sqlparse/checks/e48000a5d7.py",
+  "output_with_fix": "NO CHANGE FOUND\n",
+  "output_without_fix": "DIFFERENCE FOUND: Token.Name vs Token.Keyword\n"
+}

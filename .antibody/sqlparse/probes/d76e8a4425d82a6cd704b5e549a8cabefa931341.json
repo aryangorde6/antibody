@@ -1,0 +1,6 @@
+{
+  "verdict": "CHANGED",
+  "check": "/home/aryan/ibm_bob_hack/antibody/.antibody/sqlparse/checks/d76e8a4425.py",
+  "output_with_fix": "NO CHANGE FOUND\n",
+  "output_without_fix": "DIFFERENCE FOUND: TRUNCATE=Token.Keyword (expected Token.Keyword.DDL); GRANT=Token.Keyword (expected Token.Keyword.DCL); REVOKE=Token.Keyword (expected Token.Keyword.DCL) vs correct DDL/DCL classification\n"
+}

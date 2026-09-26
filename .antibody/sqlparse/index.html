@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Antibody &#8212; sqlparse</title>
+<style>
+:root {
+  --bg: #fff;
+  --surface: #f7f8fa;
+  --border: #e5e7eb;
+  --text: #1f2328;
+  --muted: #57606a;
+  --accent: #3b82d4;
+  --green: #1a7f37;
+  --red: #cf222e;
+  --orange: #9a6700;
+  --purple: #7c5cd8;
+  --font: -apple-system, "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --red: #f85149;
+    --orange: #d29922;
+    --purple: #bc8cff;
+  }
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  padding: 0 1rem 3rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+h1 { font-size: 1.3rem; font-weight: 700; margin: 1.5rem 0 0.25rem; }
+h2 { font-size: 1rem; font-weight: 600; margin: 1.2rem 0 0.5rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.question { font-size: 1.05rem; margin: 1.2rem 0 0.4rem; font-weight: 600; }
+.summary-line { font-size: 0.95rem; margin-bottom: 0.2rem; }
+.summary-note { font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; }
+.filters { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 1rem 0 0.5rem; align-items: center; }
+.filter-btn {
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.82rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.filter-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; }
+#search {
+  flex: 1 1 12rem;
+  min-width: 0;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.88rem; }
+th {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 2px solid var(--border);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+td { padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--border); vertical-align: top; word-break: break-word; }
+tr:last-child td { border-bottom: none; }
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge-caught { background: #dafbe1; color: var(--green); }
+.badge-now-caught { background: #dafbe1; color: var(--green); border: 1px solid var(--green); }
+.badge-exposed { background: #fff0f0; color: var(--red); }
+.badge-no-change { background: #fff8e1; color: var(--orange); }
+.badge-no-data { background: var(--surface); color: var(--muted); }
+.badge-not-a-bug { background: #f0f0ff; color: var(--purple); }
+.badge-excluded { background: var(--surface); color: var(--muted); }
+@media (prefers-color-scheme: dark) {
+  .badge-caught { background: #0f2a1a; }
+  .badge-now-caught { background: #0f2a1a; }
+  .badge-exposed { background: #2a0f0f; }
+  .badge-no-change { background: #2a1f00; }
+  .badge-not-a-bug { background: #1a1030; }
+}
+details summary { cursor: pointer; color: var(--accent); font-size: 0.82rem; user-select: none; }
+details summary:hover { text-decoration: underline; }
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.3rem;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.78rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin-top: 0.4rem;
+  max-height: 14rem;
+}
+.test-id { font-family: monospace; font-size: 0.8rem; color: var(--muted); }
+.sha-link { font-family: monospace; font-size: 0.8rem; white-space: nowrap; word-break: normal; }
+td.sha-cell { white-space: nowrap; word-break: normal; }
+.hidden { display: none !important; }
+.commands-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  padding: 0.7rem 1rem;
+  margin: 1rem 0;
+}
+.cmd-line {
+  font-family: monospace;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.3rem 0;
+}
+.cmd-line code { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; user-select: all; }
+.copy-btn {
+  flex: 0 0 auto;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.3rem;
+  background: var(--bg, transparent);
+  color: var(--text);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.cmd-note { font-size: 0.8rem; color: var(--muted); margin: 0.4rem 0 0; }
+.method-box {
+  background: var(--surface);
+  border-left: 3px solid var(--border);
+  padding: 0.6rem 0.9rem;
+  margin: 0.5rem 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+footer {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+@media (max-width: 500px) {
+  body { font-size: 14px; }
+  table { font-size: 0.82rem; }
+  th, td { padding: 0.35rem 0.4rem; }
+}
+</style>
+</head>
+<body>
+<h1>Antibody &#8212; sqlparse</h1>
+<p class="question">Of the bugs this project already fixed, how many could come back without a test noticing?</p>
+<p class="summary-line">Before: 13 of 20 caught. After: 16 of 20 caught.</p>
+<p class="summary-note">Y = 20: the number of past bugs where the patch applied, tests ran, and a check was possible (CAUGHT + NOW CAUGHT + STILL EXPOSED + NO CHANGE FOUND). Excluded, NO DATA, and NOT A BUG rows are not counted.</p>
+
+<div class="filters" id="filters">
+  <button class="filter-btn active" data-filter="all">All (45)</button>
+  <button class="filter-btn" data-filter="CAUGHT">Caught (13)</button>
+  <button class="filter-btn" data-filter="NOW CAUGHT">Now Caught (3)</button>
+  <button class="filter-btn" data-filter="STILL EXPOSED">Still Exposed (3)</button>
+  <button class="filter-btn" data-filter="NO CHANGE FOUND">No Change Found (1)</button>
+  <button class="filter-btn" data-filter="NO DATA">No Data (19)</button>
+  <button class="filter-btn" data-filter="NOT A BUG">Not a Bug (3)</button>
+  <button class="filter-btn" data-filter="EXCLUDED">Excluded (3)</button>
+  <input id="search" type="search" placeholder="Filter by subject or SHA&hellip;" aria-label="Filter rows">
+</div>
+
+<noscript><p style="color:var(--muted);font-size:.85rem;margin:.5rem 0">Enable JavaScript for interactive filtering.</p></noscript>
+
+<table id="rows-table">
+<thead>
+<tr>
+  <th>Status</th>
+  <th>Description</th>
+  <th>Fix</th>
+  <th>Issue</th>
+</tr>
+</thead>
+<tbody id="rows-body">
+<tr data-status="STILL EXPOSED" data-sha="a51df6d9e2d31b44be9adb6bc8732517db6bf96b" data-subject="Reindenting large tuple lists caused quadratic CPU consumption (GHSA-cfqr-cjx5-5jcm); fixed by measuring offsets backwards; no regression test exists that demonstrates the O(n²) timing difference."><td><span class="badge badge-exposed" data-status="STILL EXPOSED">STILL EXPOSED</span></td><td>Reindenting large tuple lists caused quadratic CPU consumption (GHSA-cfqr-cjx5-5jcm); fixed by measuring offsets backwards; no regression test exists that demonstrates the O(n²) timing difference.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Note:</strong> INVALID (not deterministic)</p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/a51df6d9e2d31b44be9adb6bc8732517db6bf96b" target="_blank" rel="noopener">a51df6d9</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="d1d80602741f77ec78e5a04ce4719244cf32352e" data-subject="Dollar-quoted literals and multiline comments triggered O(n²) re-scanning on adversarial input (GHSA-prg7-hcfm-mfcr); fixed by a pre-processing pass; code has since moved so the fix cannot be probed against its original location."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Dollar-quoted literals and multiline comments triggered O(n²) re-scanning on adversarial input (GHSA-prg7-hcfm-mfcr); fixed by a pre-processing pass; code has since moved so the fix cannot be probed against its original location.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/d1d80602741f77ec78e5a04ce4719244cf32352e" target="_blank" rel="noopener">d1d80602</a></td><td></td></tr>
+<tr data-status="STILL EXPOSED" data-sha="ef2012a5eeb491e604dea2b00d516904a3830c87" data-subject="A comment-only statement caused quadratic DoS in group_comments (GHSA-f2ff-p2ww-7p4p); fixed by processing tokens in one forward pass; the timing signal is too noisy to distinguish reliably in a regression test."><td><span class="badge badge-exposed" data-status="STILL EXPOSED">STILL EXPOSED</span></td><td>A comment-only statement caused quadratic DoS in group_comments (GHSA-f2ff-p2ww-7p4p); fixed by processing tokens in one forward pass; the timing signal is too noisy to distinguish reliably in a regression test.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Note:</strong> INVALID (not deterministic)</p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/ef2012a5eeb491e604dea2b00d516904a3830c87" target="_blank" rel="noopener">ef2012a5</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="a194d3187b04b0aed7a935c3401f068236fb6264" data-subject="A BETWEEN bound written as a leading-dot float (e.g. .03) demoted the preceding keyword from Keyword to Name; fixed by adding the pattern to the keyword regex; caught by an existing test."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>A BETWEEN bound written as a leading-dot float (e.g. .03) demoted the preceding keyword from Keyword to Name; fixed by adding the pattern to the keyword regex; caught by an existing test.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_regressions.py::test_between_leading_dot_float_issue601[a BETWEEN .03 AND .06]</div><div class="test-id">tests/test_regressions.py::test_between_leading_dot_float_issue601[a between .03 and .06]</div></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/a194d3187b04b0aed7a935c3401f068236fb6264" target="_blank" rel="noopener">a194d318</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="f66d12c245412f28c58f045b646eb53c0e691b8b" data-subject="get_real_name() returned the wrong component for identifiers with more than two dotted parts (e.g. db.schema.tbl.col returned &#x27;schema&#x27; instead of &#x27;col&#x27;); fixed by iterating to the last real name; caught by an existing test."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>get_real_name() returned the wrong component for identifiers with more than two dotted parts (e.g. db.schema.tbl.col returned &#x27;schema&#x27; instead of &#x27;col&#x27;); fixed by iterating to the last real name; caught by an existing test.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_parse.py::test_get_real_name_multi_part_dotted</div></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/f66d12c245412f28c58f045b646eb53c0e691b8b" target="_blank" rel="noopener">f66d12c2</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="ac3b9e0b25627feb42a7053074b6549df81dcfaf" data-subject="MATERIALIZED was tokenised as Name instead of Keyword, leaving it unaffected by keyword_case formatting; fixed by adding it to KEYWORDS; caught by an existing test."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>MATERIALIZED was tokenised as Name instead of Keyword, leaving it unaffected by keyword_case formatting; fixed by adding it to KEYWORDS; caught by an existing test.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_regressions.py::test_materialized_view_issue752</div></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/ac3b9e0b25627feb42a7053074b6549df81dcfaf" target="_blank" rel="noopener">ac3b9e0b</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="111b35cffcfe44b16fbdd27507f165bafd52a2a1" data-subject="Lowercase &#x27;as&#x27; in CREATE TABLE AS SELECT left has_as False, causing the function-grouping guard to fire and skip all function grouping; fixed by case-folding the check; caught by an existing test."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>Lowercase &#x27;as&#x27; in CREATE TABLE AS SELECT left has_as False, causing the function-grouping guard to fire and skip all function grouping; fixed by case-folding the check; caught by an existing test.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_grouping.py::test_grouping_alias_ctas_lowercase_as</div></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/111b35cffcfe44b16fbdd27507f165bafd52a2a1" target="_blank" rel="noopener">111b35cf</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="26d7d652218757828b64cfe7914660d529ab21e3" data-subject="ROW_FORMAT was tokenised as Name, causing the grouper to treat it as a table alias; fixed by adding it to KEYWORDS; caught by an existing test."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>ROW_FORMAT was tokenised as Name, causing the grouper to treat it as a table alias; fixed by adding it to KEYWORDS; caught by an existing test.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_regressions.py::test_alter_table_row_format_issue773</div></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/26d7d652218757828b64cfe7914660d529ab21e3" target="_blank" rel="noopener">26d7d652</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="8f978caa7cc777d845d358bfc82ea30110395d32" data-subject="Anonymous BEGIN...END blocks were incorrectly split into multiple statements; fixed by a stack-based splitter rewrite; code has since moved so the fix cannot be probed against its original location."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Anonymous BEGIN...END blocks were incorrectly split into multiple statements; fixed by a stack-based splitter rewrite; code has since moved so the fix cannot be probed against its original location.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/8f978caa7cc777d845d358bfc82ea30110395d32" target="_blank" rel="noopener">8f978caa</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="da67ac16b8fa2c5041458bee728c8a914bed2d37" data-subject="When the grouping-limit was exceeded, functions silently returned None instead of raising SQLParseError; fixed by adding an explicit error raise; code has since moved."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>When the grouping-limit was exceeded, functions silently returned None instead of raising SQLParseError; fixed by adding an explicit error raise; code has since moved.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/da67ac16b8fa2c5041458bee728c8a914bed2d37" target="_blank" rel="noopener">da67ac16</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="5ca50a2ee9b39e9efeea33e01f132d628144fb69" data-subject="BEGIN TRANSACTION...END TRANSACTION blocks were not split correctly, a regression introduced in v0.5.4; fixed by handling the TRANSACTION keyword; code has since moved."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>BEGIN TRANSACTION...END TRANSACTION blocks were not split correctly, a regression introduced in v0.5.4; fixed by handling the TRANSACTION keyword; code has since moved.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/5ca50a2ee9b39e9efeea33e01f132d628144fb69" target="_blank" rel="noopener">5ca50a2e</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="1a3bfbd50b82c05d9adcc51bacba059671dc1bc7" data-subject="Semicolons inside BEGIN...END blocks were treated as statement terminators, splitting a single statement into multiple fragments; fixed by tracking block depth; code has since moved."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Semicolons inside BEGIN...END blocks were treated as statement terminators, splitting a single statement into multiple fragments; fixed by tracking block depth; code has since moved.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/1a3bfbd50b82c05d9adcc51bacba059671dc1bc7" target="_blank" rel="noopener">1a3bfbd5</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="e92a032c81d51a6645b4f8c32470481894818ba0" data-subject="IF EXISTS inside a BEGIN...END block caused incorrect statement merging; fixed by adding IF to the keyword table for the splitter; code has since moved."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>IF EXISTS inside a BEGIN...END block caused incorrect statement merging; fixed by adding IF to the keyword table for the splitter; code has since moved.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/e92a032c81d51a6645b4f8c32470481894818ba0" target="_blank" rel="noopener">e92a032c</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="73c8ba3ae88b608d39740c0776fb15064232258e" data-subject="strip_comments=True left a stray &#x27;--B&#x27; token when the statement contained only comments; fixed by a one-line filter correction; caught by an existing test."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>strip_comments=True left a stray &#x27;--B&#x27; token when the statement contained only comments; fixed by a one-line filter correction; caught by an existing test.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_format.py::TestFormat::test_strip_comments_single</div></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/73c8ba3ae88b608d39740c0776fb15064232258e" target="_blank" rel="noopener">73c8ba3a</a></td><td></td></tr>
+<tr data-status="NOT A BUG" data-sha="31903e09db518ee3969110073427196ef9cd46c3" data-subject="Add pre-commit hook support (fixes #537)"><td><span class="badge badge-not-a-bug" data-status="NOT A BUG">NOT A BUG</span></td><td>Add pre-commit hook support (fixes #537)</td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/31903e09db518ee3969110073427196ef9cd46c3" target="_blank" rel="noopener">31903e09</a></td><td><a href="https://github.com/andialbrecht/sqlparse/issues/537" target="_blank" rel="noopener">537</a></td></tr>
+<tr data-status="EXCLUDED" data-sha="f1d2d688bc542ee2645f8ecdf8f7bd9488a96136" data-subject="Add type annotations to public API functions"><td><span class="badge badge-excluded" data-status="EXCLUDED">EXCLUDED</span></td><td>Add type annotations to public API functions<br><small style="color:var(--muted)">non-behavioural: Source changes are identical after stripping non-behavioural elements</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/f1d2d688bc542ee2645f8ecdf8f7bd9488a96136" target="_blank" rel="noopener">f1d2d688</a></td><td></td></tr>
+<tr data-status="NOW CAUGHT" data-sha="694747fdbed387e05ba6904ed89183a42bb7c843" data-subject="ATTACH and DETACH were not in KEYWORDS_PLPGSQL, so PostgreSQL ALTER TABLE DETACH PARTITION statements parsed them as Name tokens; fixed by adding the two keywords; now protected by test_694747fdbe.py."><td><span class="badge badge-now-caught" data-status="NOW CAUGHT">NOW CAUGHT</span></td><td>ATTACH and DETACH were not in KEYWORDS_PLPGSQL, so PostgreSQL ALTER TABLE DETACH PARTITION statements parsed them as Name tokens; fixed by adding the two keywords; now protected by test_694747fdbe.py.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/antibody/test_694747fdbe.py</div></p><p style='margin:.3rem 0'><strong>New test:</strong><pre>import sqlparse
+from sqlparse import tokens as T
+
+
+def test_attach_detach_are_keywords():
+    # ATTACH and DETACH should be recognized as Keyword tokens in PostgreSQL dialect
+    for word, sql in [
+        (&quot;DETACH&quot;, &quot;ALTER TABLE atable DETACH PARTITION atable_p00&quot;),
+        (&quot;ATTACH&quot;, &quot;ALTER INDEX atable_acolumn_idx ATTACH PARTITION atable_p01_acolumn_idx&quot;),
+    ]:
+        parsed = sqlparse.parse(sql)[0]
+        found_type = None
+        for token in parsed.flatten():
+            if token.normalized.upper() == word:
+                found_type = token.ttype
+                break
+        assert found_type == T.Keyword, (
+            f&quot;Expected {word} to have token type {T.Keyword}, got {found_type}&quot;
+        )
+</pre></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/694747fdbed387e05ba6904ed89183a42bb7c843" target="_blank" rel="noopener">694747fd</a></td><td></td></tr>
+<tr data-status="EXCLUDED" data-sha="274310956473601f53f8d0b7e9024f364b5f04b6" data-subject="Fixed &#x27;trailing&#x27; typo in split method documentation"><td><span class="badge badge-excluded" data-status="EXCLUDED">EXCLUDED</span></td><td>Fixed &#x27;trailing&#x27; typo in split method documentation<br><small style="color:var(--muted)">non-behavioural: Source changes are identical after stripping non-behavioural elements</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/274310956473601f53f8d0b7e9024f364b5f04b6" target="_blank" rel="noopener">27431095</a></td><td></td></tr>
+<tr data-status="EXCLUDED" data-sha="8eb778ca73c4b297b9319488835df295ef815e7e" data-subject="[fix] issue262 adding comment and tests"><td><span class="badge badge-excluded" data-status="EXCLUDED">EXCLUDED</span></td><td>[fix] issue262 adding comment and tests<br><small style="color:var(--muted)">non-behavioural: Source changes are identical after stripping non-behavioural elements</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/8eb778ca73c4b297b9319488835df295ef815e7e" target="_blank" rel="noopener">8eb778ca</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="af6df6c6627b5fcf98bc7bb46f780e1fa0d1a7ef" data-subject="SQL hints (/*+ ... */) were deleted by strip_comments, causing loss of query optimiser hints; fixed by preserving hint-style block comments; code has since moved."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>SQL hints (/*+ ... */) were deleted by strip_comments, causing loss of query optimiser hints; fixed by preserving hint-style block comments; code has since moved.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/af6df6c6627b5fcf98bc7bb46f780e1fa0d1a7ef" target="_blank" rel="noopener">af6df6c6</a></td><td></td></tr>
+<tr data-status="NOW CAUGHT" data-sha="e48000a5d76ff4d762821708f99ca90962e25f46" data-subject="EXTENSION was tokenised as Identifier rather than Keyword, producing wrong token types in DROP/CREATE EXTENSION statements; fixed by adding it to KEYWORDS; now protected by test_e48000a5d7.py."><td><span class="badge badge-now-caught" data-status="NOW CAUGHT">NOW CAUGHT</span></td><td>EXTENSION was tokenised as Identifier rather than Keyword, producing wrong token types in DROP/CREATE EXTENSION statements; fixed by adding it to KEYWORDS; now protected by test_e48000a5d7.py.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/antibody/test_e48000a5d7.py</div></p><p style='margin:.3rem 0'><strong>New test:</strong><pre>import sqlparse
+from sqlparse import tokens as T
+
+
+def test_extension_tokenized_as_keyword():
+    &quot;&quot;&quot;EXTENSION should be tokenized as a Keyword, not part of an Identifier.&quot;&quot;&quot;
+    stmt = &quot;DROP EXTENSION pgcrypto&quot;
+    parsed = sqlparse.parse(stmt)[0]
+
+    extension_token = None
+    for token in parsed.flatten():
+        if token.normalized.upper() == &#x27;EXTENSION&#x27;:
+            extension_token = token
+            break
+
+    assert extension_token is not None, &quot;EXTENSION token not found in parsed statement&quot;
+    assert extension_token.ttype is T.Keyword, (
+        f&quot;Expected EXTENSION to have ttype {T.Keyword}, got {extension_token.ttype}&quot;
+    )
+</pre></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/e48000a5d76ff4d762821708f99ca90962e25f46" target="_blank" rel="noopener">e48000a5</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="b126ba5b2004474e9ad899456c077f976b761319" data-subject="ASC/DESC NULLS FIRST/LAST were tokenised inconsistently, breaking ORDER BY formatting; fixed by adding NULLS FIRST/LAST as compound keywords; code has since moved."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>ASC/DESC NULLS FIRST/LAST were tokenised inconsistently, breaking ORDER BY formatting; fixed by adding NULLS FIRST/LAST as compound keywords; code has since moved.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/b126ba5b2004474e9ad899456c077f976b761319" target="_blank" rel="noopener">b126ba5b</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="0c4902f3f7aafa8c2e63a375ec307c210842f543" data-subject="strip_whitespace=True failed to descend into sub-groups (e.g. CTE parentheses), leaving trailing spaces inside nested tokens; fixed by recursing into sub-groups; caught by an existing test."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>strip_whitespace=True failed to descend into sub-groups (e.g. CTE parentheses), leaving trailing spaces inside nested tokens; fixed by recursing into sub-groups; caught by an existing test.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_format.py::test_strip_ws_removes_trailing_ws_in_groups</div></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/0c4902f3f7aafa8c2e63a375ec307c210842f543" target="_blank" rel="noopener">0c4902f3</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="791e25de46f443597d99314cfd1a68217bcaf970" data-subject="Multiple CASE clauses inside a BEGIN block caused a single statement to be split into several; fixed by tracking CASE depth in the splitter; code has since moved."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Multiple CASE clauses inside a BEGIN block caused a single statement to be split into several; fixed by tracking CASE depth in the splitter; code has since moved.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/791e25de46f443597d99314cfd1a68217bcaf970" target="_blank" rel="noopener">791e25de</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="bf74d8bc2c572b978997f7785747ad262025566c" data-subject="No compact formatting option existed, leaving users with no way to suppress excessive newlines; fixed by adding reindent_aligned/compact; code has since moved."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>No compact formatting option existed, leaving users with no way to suppress excessive newlines; fixed by adding reindent_aligned/compact; code has since moved.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/bf74d8bc2c572b978997f7785747ad262025566c" target="_blank" rel="noopener">bf74d8bc</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="8b0342730b2e53dcc7887e5b4563d479444ec0ba" data-subject="Stripping an inline comment directly adjacent to a value fused it with the next keyword (e.g. &#x27;1AS foo&#x27;); fixed by preserving grouping boundaries in Comment handling; code has since moved."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Stripping an inline comment directly adjacent to a value fused it with the next keyword (e.g. &#x27;1AS foo&#x27;); fixed by preserving grouping boundaries in Comment handling; code has since moved.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/8b0342730b2e53dcc7887e5b4563d479444ec0ba" target="_blank" rel="noopener">8b034273</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="e03b74e608b71dd06824c2cb42421c0d790248e3" data-subject="Function.get_parameters() raised an error when the function had an OVER clause because it assumed the last token was always a Parenthesis; fixed by stopping at the first Parenthesis; caught by an existing test."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>Function.get_parameters() raised an error when the function had an OVER clause because it assumed the last token was always a Parenthesis; fixed by stopping at the first Parenthesis; caught by an existing test.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_grouping.py::test_grouping_function</div></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/e03b74e608b71dd06824c2cb42421c0d790248e3" target="_blank" rel="noopener">e03b74e6</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="617b8f6cd3c55bacf2c80130901508518753f7e1" data-subject="Window functions were not grouped with their OVER clause into a single Identifier; fixed by adding OVER-clause grouping; code has since moved."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Window functions were not grouped with their OVER clause into a single Identifier; fixed by adding OVER-clause grouping; code has since moved.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/617b8f6cd3c55bacf2c80130901508518753f7e1" target="_blank" rel="noopener">617b8f6c</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="46971e5a804b29e7dbd437155a8ceffab8ef1cd5" data-subject="PRIMARY KEY was not recognised as a compound keyword, producing incorrect token structure in CREATE TABLE statements; fixed by adding a regex pattern; caught by an existing test."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>PRIMARY KEY was not recognised as a compound keyword, producing incorrect token structure in CREATE TABLE statements; fixed by adding a regex pattern; caught by an existing test.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_regressions.py::test_primary_key_issue740</div></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/46971e5a804b29e7dbd437155a8ceffab8ef1cd5" target="_blank" rel="noopener">46971e5a</a></td><td></td></tr>
+<tr data-status="NOW CAUGHT" data-sha="d76e8a4425d82a6cd704b5e549a8cabefa931341" data-subject="TRUNCATE was classified as DML instead of DDL, and GRANT/REVOKE as DML instead of DCL, causing ttype checks to return wrong results; fixed by correcting the keyword classifications; now protected by test_d76e8a4425.py."><td><span class="badge badge-now-caught" data-status="NOW CAUGHT">NOW CAUGHT</span></td><td>TRUNCATE was classified as DML instead of DDL, and GRANT/REVOKE as DML instead of DCL, causing ttype checks to return wrong results; fixed by correcting the keyword classifications; now protected by test_d76e8a4425.py.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/antibody/test_d76e8a4425.py</div></p><p style='margin:.3rem 0'><strong>New test:</strong><pre>import sqlparse
+from sqlparse import tokens as T
+
+
+def test_truncate_ddl_grant_revoke_dcl():
+    &quot;&quot;&quot;TRUNCATE should be Keyword.DDL; GRANT and REVOKE should be Keyword.DCL.&quot;&quot;&quot;
+    def first_ttype(sql):
+        return sqlparse.parse(sql)[0].tokens[0].ttype
+
+    truncate_ttype = first_ttype(&quot;TRUNCATE&quot;)
+    grant_ttype = first_ttype(&quot;GRANT&quot;)
+    revoke_ttype = first_ttype(&quot;REVOKE&quot;)
+
+    assert truncate_ttype == T.Keyword.DDL, (
+        f&quot;TRUNCATE ttype is {truncate_ttype}, expected {T.Keyword.DDL}&quot;
+    )
+    assert grant_ttype == T.Keyword.DCL, (
+        f&quot;GRANT ttype is {grant_ttype}, expected {T.Keyword.DCL}&quot;
+    )
+    assert revoke_ttype == T.Keyword.DCL, (
+        f&quot;REVOKE ttype is {revoke_ttype}, expected {T.Keyword.DCL}&quot;
+    )
+</pre></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/d76e8a4425d82a6cd704b5e549a8cabefa931341" target="_blank" rel="noopener">d76e8a44</a></td><td></td></tr>
+<tr data-status="NO CHANGE FOUND" data-sha="8c24779e027e92a1ed379fc271e20f540b0f3d20" data-subject="JSON operators (-&gt; and -&gt;&gt;) in SELECT caused incorrect reindent alignment; fixed by grouping JSON-operator expressions before indenting; the check found no observable difference in current code — still exposed."><td><span class="badge badge-no-change" data-status="NO CHANGE FOUND">NO CHANGE FOUND</span></td><td>JSON operators (-&gt; and -&gt;&gt;) in SELECT caused incorrect reindent alignment; fixed by grouping JSON-operator expressions before indenting; the check found no observable difference in current code — still exposed.<br><small style="color:var(--muted)">check: /home/aryan/ibm_bob_hack/antibody/.antibody/sqlparse/checks/8c24779e02.py</small><details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Probe:</strong> <code>/home/aryan/ibm_bob_hack/antibody/.antibody/sqlparse/checks/8c24779e02.py</code><br>With fix:<pre>DIFFERENCE FOUND: indents=[0, 7] vs all-equal
+</pre>Without fix:<pre>DIFFERENCE FOUND: indents=[0, 7] vs all-equal
+</pre></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/8c24779e027e92a1ed379fc271e20f540b0f3d20" target="_blank" rel="noopener">8c24779e</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="6b05583f119224a43f8047159120edd0228ebd76" data-subject="The -&gt; operator was not recognised as a single token, so use_space_around_operators=True split it and produced invalid SQL; fixed by adding JSON-operator patterns; caught by an existing test."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>The -&gt; operator was not recognised as a single token, so use_space_around_operators=True split it and produced invalid SQL; fixed by adding JSON-operator patterns; caught by an existing test.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_format.py::test_format_json_ops</div><div class="test-id">tests/test_parse.py::test_json_operators[-&gt;]</div><div class="test-id">tests/test_parse.py::test_json_operators[-&gt;&gt;]</div><div class="test-id">tests/test_parse.py::test_json_operators[#&gt;]</div><div class="test-id">tests/test_parse.py::test_json_operators[#&gt;&gt;]</div><div class="test-id">tests/test_parse.py::test_json_operators[@&gt;]</div><div class="test-id">tests/test_parse.py::test_json_operators[&lt;@]</div></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/6b05583f119224a43f8047159120edd0228ebd76" target="_blank" rel="noopener">6b05583f</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="5bb129d3fc8a4d031bd37fab8e5ee24a199a9b8c" data-subject="The Lexer singleton was stored before keywords were fully loaded, causing intermittent failures in multi-threaded use; fixed by acquiring a lock during initialisation; code has since moved."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>The Lexer singleton was stored before keywords were fully loaded, causing intermittent failures in multi-threaded use; fixed by acquiring a lock during initialisation; code has since moved.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/5bb129d3fc8a4d031bd37fab8e5ee24a199a9b8c" target="_blank" rel="noopener">5bb129d3</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="7334ac99152d02bb09ab0abe79377174c2867f7c" data-subject="Statements following a GO keyword in Transact-SQL were typed as UNKNOWN instead of their true DML type; fixed by treating GO as a statement splitter; code has since moved."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Statements following a GO keyword in Transact-SQL were typed as UNKNOWN instead of their true DML type; fixed by treating GO as a statement splitter; code has since moved.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/7334ac99152d02bb09ab0abe79377174c2867f7c" target="_blank" rel="noopener">7334ac99</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="39b5a02551de051b1e888135fe71759d5b49a134" data-subject="group_order() was not recursive, so ORDER BY modifiers (DESC) inside sub-queries were not grouped; fixed by adding the @recurse decorator; caught by an existing test."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>group_order() was not recursive, so ORDER BY modifiers (DESC) inside sub-queries were not grouped; fixed by adding the @recurse decorator; caught by an existing test.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_grouping.py::test_grouping_nested_identifier_with_order</div></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/39b5a02551de051b1e888135fe71759d5b49a134" target="_blank" rel="noopener">39b5a025</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="fac38cd03bea712e096222f16199a7482a4837da" data-subject="copy.deepcopy() on a parsed statement raised TypeError because _TokenType.__deepcopy__ was missing and the class matched as callable; fixed by ignoring dunder attributes in __getattr__; caught by an existing test."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>copy.deepcopy() on a parsed statement raised TypeError because _TokenType.__deepcopy__ was missing and the class matched as callable; fixed by ignoring dunder attributes in __getattr__; caught by an existing test.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_regressions.py::test_copy_issue672</div></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/fac38cd03bea712e096222f16199a7482a4837da" target="_blank" rel="noopener">fac38cd0</a></td><td></td></tr>
+<tr data-status="NOT A BUG" data-sha="fc76056fb8f0ec713a3f2a2b6206a3336932c382" data-subject="Cleanup regex for detecting keywords (fixes #709)."><td><span class="badge badge-not-a-bug" data-status="NOT A BUG">NOT A BUG</span></td><td>Cleanup regex for detecting keywords (fixes #709).</td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/fc76056fb8f0ec713a3f2a2b6206a3336932c382" target="_blank" rel="noopener">fc76056f</a></td><td><a href="https://github.com/andialbrecht/sqlparse/issues/709" target="_blank" rel="noopener">709</a></td></tr>
+<tr data-status="CAUGHT" data-sha="dd9d5b91d7aa30e4a000d5370f09dc99378891dc" data-subject="get_type() returned UNKNOWN when a comment appeared between the WITH keyword and the CTE identifier; fixed by skipping comment tokens in the type-detection walk; caught by an existing test."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>get_type() returned UNKNOWN when a comment appeared between the WITH keyword and the CTE identifier; fixed by skipping comment tokens in the type-detection walk; caught by an existing test.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_regressions.py::test_comment_between_cte_clauses_issue632</div></p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/dd9d5b91d7aa30e4a000d5370f09dc99378891dc" target="_blank" rel="noopener">dd9d5b91</a></td><td></td></tr>
+<tr data-status="NOT A BUG" data-sha="8b789f286e1b6cbf05c15020ea7544cb7f02f8f7" data-subject="Switch to pyproject.toml (fixes #685)."><td><span class="badge badge-not-a-bug" data-status="NOT A BUG">NOT A BUG</span></td><td>Switch to pyproject.toml (fixes #685).</td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/8b789f286e1b6cbf05c15020ea7544cb7f02f8f7" target="_blank" rel="noopener">8b789f28</a></td><td><a href="https://github.com/andialbrecht/sqlparse/issues/685" target="_blank" rel="noopener">685</a></td></tr>
+<tr data-status="NO DATA" data-sha="e9241945801808d1db7f76bdccbbe9a200042c37" data-subject="The IN keyword was not uppercased by keyword_case=&#x27;upper&#x27; after a regression introduced in 0.4.0; fixed by reverting the erroneous Comparison classification; code has since moved."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>The IN keyword was not uppercased by keyword_case=&#x27;upper&#x27; after a regression introduced in 0.4.0; fixed by reverting the erroneous Comparison classification; code has since moved.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/e9241945801808d1db7f76bdccbbe9a200042c37" target="_blank" rel="noopener">e9241945</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="b72a8ff42f53cba0517b1dd9e8af051b4a060ecf" data-subject="Unicode characters outside the ASCII range (e.g. Chinese ideographs) were not recognised as valid identifier characters, breaking reindentation; fixed by using \w in the regex; code has since moved."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Unicode characters outside the ASCII range (e.g. Chinese ideographs) were not recognised as valid identifier characters, breaking reindentation; fixed by using \w in the regex; code has since moved.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/b72a8ff42f53cba0517b1dd9e8af051b4a060ecf" target="_blank" rel="noopener">b72a8ff4</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="403de6fc648ac4e012b60b49161c3f5f36dc944a" data-subject="Lowercase &#x27;create table&#x27; statements were not parsed correctly because keyword comparisons lacked .upper() calls; fixed by normalising case; code has since moved."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Lowercase &#x27;create table&#x27; statements were not parsed correctly because keyword comparisons lacked .upper() calls; fixed by normalising case; code has since moved.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/403de6fc648ac4e012b60b49161c3f5f36dc944a" target="_blank" rel="noopener">403de6fc</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="0bbfd5f8326fd4291c390858ba8ff482ff5ced70" data-subject="DISTINCTROW (an MS Access keyword) was not in the keyword table, so it was tokenised as a Name; fixed by adding it to KEYWORDS; code has since moved."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>DISTINCTROW (an MS Access keyword) was not in the keyword table, so it was tokenised as a Name; fixed by adding it to KEYWORDS; code has since moved.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/0bbfd5f8326fd4291c390858ba8ff482ff5ced70" target="_blank" rel="noopener">0bbfd5f8</a></td><td></td></tr>
+<tr data-status="STILL EXPOSED" data-sha="e58781dd632584c783ef082257309ea5efdb6750" data-subject="The INDICATOR keyword was misspelled as &#x27;INDITCATOR&#x27; in the keywords dict, making it unrecognised; fixed by correcting the typo; the reverse patch cannot be applied because the keyword now appears at multiple locations in the file."><td><span class="badge badge-exposed" data-status="STILL EXPOSED">STILL EXPOSED</span></td><td>The INDICATOR keyword was misspelled as &#x27;INDITCATOR&#x27; in the keywords dict, making it unrecognised; fixed by correcting the typo; the reverse patch cannot be applied because the keyword now appears at multiple locations in the file.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Note:</strong> INCONCLUSIVE (data-only change)</p></details></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/e58781dd632584c783ef082257309ea5efdb6750" target="_blank" rel="noopener">e58781dd</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="e66046785b816e5c2d22f101f36faefd19c4a771" data-subject="The scientific-notation regex used \d* (zero-or-more), causing aliases like &#x27;e2&#x27; to be misclassified as float literals; fixed by changing to \d+; code has since moved."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>The scientific-notation regex used \d* (zero-or-more), causing aliases like &#x27;e2&#x27; to be misclassified as float literals; fixed by changing to \d+; code has since moved.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td class="sha-cell"><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/e66046785b816e5c2d22f101f36faefd19c4a771" target="_blank" rel="noopener">e6604678</a></td><td></td></tr>
+</tbody>
+</table>
+
+<h2>Run it on your own project</h2>
+<div class="commands-box">
+  <div class="cmd-line"><code>python3 .bob/skills/recurrence-audit/scripts/antibody.py setup &lt;name&gt; &lt;git-url&gt; [--rev SHA] [--deps PKG ...]</code><button class="copy-btn" type="button" hidden>Copy</button></div>
+  <div class="cmd-line"><code>python3 .bob/skills/recurrence-audit/scripts/antibody.py candidates &lt;name&gt;</code><button class="copy-btn" type="button" hidden>Copy</button></div>
+  <div class="cmd-line"><code>python3 .bob/skills/recurrence-audit/scripts/antibody.py run &lt;name&gt;</code><button class="copy-btn" type="button" hidden>Copy</button></div>
+  <div class="cmd-line"><code>python3 .bob/skills/recurrence-audit/scripts/antibody.py ledger &lt;name&gt;</code><button class="copy-btn" type="button" hidden>Copy</button></div>
+  <p class="cmd-note">Needs Python 3.12 or newer. Run from the root of the repository that holds <code>.bob/</code>.</p>
+</div>
+
+<h2>Method</h2>
+<div class="method-box">
+  For each past bug fix: apply the reverse patch, run the test suite, restore the code.
+  A <strong>CAUGHT</strong> row means at least one test failed when the bug was put back.
+  A <strong>NOW CAUGHT</strong> row means a new test was proved and just re-passed that check.
+  A <strong>STILL EXPOSED</strong> row means the patch applied, all tests stayed green,
+  and a probe confirmed the behaviour changed (or no check could tell either way).
+  The row says which. <strong>NO CHANGE FOUND</strong>: a probe ran but both outputs matched
+  (listed under &ldquo;Excluded after a check&rdquo;, with the check and both outputs).
+  <strong>NO DATA</strong>: the patch could not be applied or no tests ran (with its reason).
+</div>
+
+<h2>What this can&rsquo;t tell you</h2>
+<div class="method-box">
+  Rows with no data are <em>unknown</em>, never safe.
+  &ldquo;Caught&rdquo; means a test noticed the regression &mdash; not that the test is perfect or complete.
+  A green suite on a reverted patch is a lower bound, not a guarantee.
+</div>
+
+<script>
+(function() {
+  var activeFilter = "all";
+  var searchVal = "";
+  function applyFilters() {
+    document.querySelectorAll("#rows-body tr").forEach(function(row) {
+      var s = row.dataset.status || "";
+      var text = (row.dataset.subject || "") + " " + (row.dataset.sha || "");
+      var matchFilter = (activeFilter === "all") || (s === activeFilter);
+      var matchSearch = !searchVal || text.toLowerCase().indexOf(searchVal) !== -1;
+      row.classList.toggle("hidden", !(matchFilter && matchSearch));
+    });
+  }
+  document.querySelectorAll(".filter-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      activeFilter = btn.dataset.filter;
+      document.querySelectorAll(".filter-btn").forEach(function(b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      applyFilters();
+    });
+  });
+  document.querySelectorAll(".copy-btn").forEach(function(btn) {
+    var code = btn.parentNode.querySelector("code");
+    if (!code || !navigator.clipboard) return;
+    btn.hidden = false;
+    btn.addEventListener("click", function() {
+      navigator.clipboard.writeText(code.textContent).then(function() {
+        btn.textContent = "Copied";
+        setTimeout(function() { btn.textContent = "Copy"; }, 1500);
+      });
+    });
+  });
+  var search = document.getElementById("search");
+  if (search) {
+    search.addEventListener("input", function() {
+      searchVal = search.value.toLowerCase();
+      applyFilters();
+    });
+  }
+})();
+</script>
+
+<footer>Made with IBM Bob</footer>
+</body>
+</html>

@@ -1,0 +1,13 @@
+diff --git a/sqlparse/keywords.py b/sqlparse/keywords.py
+index 8911c7a..9b7f815 100644
+--- a/sqlparse/keywords.py
++++ b/sqlparse/keywords.py
+@@ -89,6 +89,8 @@ SQL_REGEX = [
+     # but the match isn't a keyword.
+     (r'\w[$#\w]*', PROCESS_AS_KEYWORD),
+     (r'[;:()\[\],\.]', tokens.Punctuation),
++    # JSON operators
++    (r'(\->>?|#>>?|@>|<@|\?\|?|\?&|\-|#\-)', tokens.Operator),
+     (r'[<>=~!]+', tokens.Operator.Comparison),
+     (r'[+/@#%^&|^-]+', tokens.Operator),
+ ]

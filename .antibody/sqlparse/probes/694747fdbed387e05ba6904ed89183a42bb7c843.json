@@ -1,0 +1,6 @@
+{
+  "verdict": "CHANGED",
+  "check": "/home/aryan/ibm_bob_hack/antibody/.antibody/sqlparse/checks/694747fdbe.py",
+  "output_with_fix": "NO CHANGE FOUND\n",
+  "output_without_fix": "DIFFERENCE FOUND: DETACH=Token.Name, ATTACH=Token.Name vs DETACH=Token.Keyword, ATTACH=Token.Keyword\n"
+}

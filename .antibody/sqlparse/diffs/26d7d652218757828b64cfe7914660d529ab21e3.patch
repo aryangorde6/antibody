@@ -1,0 +1,12 @@
+diff --git a/sqlparse/keywords.py b/sqlparse/keywords.py
+index 4bafcda..12acb84 100644
+--- a/sqlparse/keywords.py
++++ b/sqlparse/keywords.py
+@@ -488,6 +488,7 @@ KEYWORDS = {
+     'ROUTINE_SCHEMA': tokens.Keyword,
+     'ROWS': tokens.Keyword,
+     'ROW_COUNT': tokens.Keyword,
++    'ROW_FORMAT': tokens.Keyword,
+     'RULE': tokens.Keyword,
+ 
+     'SAVE_POINT': tokens.Keyword,

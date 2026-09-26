@@ -1,0 +1,115 @@
+diff --git a/sqlparse/cli.py b/sqlparse/cli.py
+index 3aa3539..03ee86e 100644
+--- a/sqlparse/cli.py
++++ b/sqlparse/cli.py
+@@ -34,10 +34,13 @@ def create_parser():
+         prog='sqlformat',
+         description='Format FILE according to OPTIONS. Use "-" as FILE '
+                     'to read from stdin.',
+-        usage='%(prog)s  [OPTIONS] FILE, ...',
++        usage='%(prog)s [OPTIONS] FILE [FILE ...]',
+     )
+ 
+-    parser.add_argument('filename')
++    parser.add_argument(
++        'filename',
++        nargs='+',
++        help='file(s) to format (use "-" for stdin)')
+ 
+     parser.add_argument(
+         '-o', '--outfile',
+@@ -45,6 +48,13 @@ def create_parser():
+         metavar='FILE',
+         help='write output to FILE (defaults to stdout)')
+ 
++    parser.add_argument(
++        '--in-place',
++        dest='inplace',
++        action='store_true',
++        default=False,
++        help='format files in-place (overwrite existing files)')
++
+     parser.add_argument(
+         '--version',
+         action='version',
+@@ -159,11 +169,17 @@ def _error(msg):
+     return 1
+ 
+ 
+-def main(args=None):
+-    parser = create_parser()
+-    args = parser.parse_args(args)
++def _process_file(filename, args):
++    """Process a single file with the given formatting options.
++
++    Returns 0 on success, 1 on error.
++    """
++    # Check for incompatible option combinations first
++    if filename == '-' and args.inplace:
++        return _error('Cannot use --in-place with stdin')
+ 
+-    if args.filename == '-':  # read from stdin
++    # Read input
++    if filename == '-':  # read from stdin
+         wrapper = TextIOWrapper(sys.stdin.buffer, encoding=args.encoding)
+         try:
+             data = wrapper.read()
+@@ -171,14 +187,20 @@ def main(args=None):
+             wrapper.detach()
+     else:
+         try:
+-            with open(args.filename, encoding=args.encoding) as f:
++            with open(filename, encoding=args.encoding) as f:
+                 data = ''.join(f.readlines())
+         except OSError as e:
+-            return _error(
+-                f'Failed to read {args.filename}: {e}')
++            return _error(f'Failed to read {filename}: {e}')
+ 
++    # Determine output destination
+     close_stream = False
+-    if args.outfile:
++    if args.inplace:
++        try:
++            stream = open(filename, 'w', encoding=args.encoding)
++            close_stream = True
++        except OSError as e:
++            return _error(f'Failed to open {filename}: {e}')
++    elif args.outfile:
+         try:
+             stream = open(args.outfile, 'w', encoding=args.encoding)
+             close_stream = True
+@@ -187,6 +209,7 @@ def main(args=None):
+     else:
+         stream = sys.stdout
+ 
++    # Format the SQL
+     formatter_opts = vars(args)
+     try:
+         formatter_opts = sqlparse.formatter.validate_options(formatter_opts)
+@@ -199,3 +222,25 @@ def main(args=None):
+     if close_stream:
+         stream.close()
+     return 0
++
++
++def main(args=None):
++    parser = create_parser()
++    args = parser.parse_args(args)
++
++    # Validate argument combinations
++    if len(args.filename) > 1:
++        if args.outfile:
++            return _error('Cannot use -o/--outfile with multiple files')
++        if not args.inplace:
++            return _error('Multiple files require --in-place flag')
++
++    # Process all files
++    exit_code = 0
++    for filename in args.filename:
++        result = _process_file(filename, args)
++        if result != 0:
++            exit_code = result
++            # Continue processing remaining files even if one fails
++
++    return exit_code

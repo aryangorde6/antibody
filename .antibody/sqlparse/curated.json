@@ -1,0 +1,212 @@
+{
+  "694747fdbed387e05ba6904ed89183a42bb7c843": {
+    "verdict": "BUG",
+    "reason": "ATTACH and DETACH fall into the same class as EXTENSION — they are valid PostgreSQL keywords used in ALTER TABLE/INDEX statements but were parsed as Name tokens instead of Keyword, producing incorrect tokenization.",
+    "link": "https://github.com/andialbrecht/sqlparse/pull/808"
+  },
+  "a51df6d9e2d31b44be9adb6bc8732517db6bf96b": {
+    "verdict": "BUG",
+    "reason": "Reindentation of tuple lists causes near-cap quadratic CPU consumption from an input of roughly 16 KB and degrading service availability.",
+    "link": "https://github.com/andialbrecht/sqlparse/security/advisories/GHSA-cfqr-cjx5-5jcm"
+  },
+  "d1d80602741f77ec78e5a04ce4719244cf32352e": {
+    "verdict": "BUG",
+    "reason": "Dollar-quoted literals and multiline comments are O(n^2) on adversarial input with many unclosed openers, since each failed attempt re-scans to the end of the remaining text.",
+    "link": "https://github.com/andialbrecht/sqlparse/security/advisories/GHSA-prg7-hcfm-mfcr"
+  },
+  "ef2012a5eeb491e604dea2b00d516904a3830c87": {
+    "verdict": "BUG",
+    "reason": "A comment-only statement may cause a Denial of Service (DoS) with quadratic O(n\u00b2) behavior causing minutes of CPU regardless of the 10000 token cap.",
+    "link": "https://github.com/andialbrecht/sqlparse/security/advisories/GHSA-f2ff-p2ww-7p4p"
+  },
+  "a194d3187b04b0aed7a935c3401f068236fb6264": {
+    "verdict": "BUG",
+    "reason": "Parsing a BETWEEN bound written as a float without a leading zero gets demoted from a keyword to a Name, the WHERE body is grouped wrong.",
+    "link": "https://github.com/andialbrecht/sqlparse/pull/868"
+  },
+  "f66d12c245412f28c58f045b646eb53c0e691b8b": {
+    "verdict": "BUG",
+    "reason": "For a fully-qualified name with more than two dotted parts, get_real_name() returns the wrong component \u2014 for example db.schema.tbl.col returns 'schema' instead of 'col'.",
+    "link": "https://github.com/andialbrecht/sqlparse/pull/865"
+  },
+  "ac3b9e0b25627feb42a7053074b6549df81dcfaf": {
+    "verdict": "BUG",
+    "reason": "In statements like CREATE MATERIALIZED VIEW, the token is lexed as a Name instead of a Keyword, leaving it untouched by keyword_case formatting, producing inconsistent output.",
+    "link": "https://github.com/andialbrecht/sqlparse/pull/854"
+  },
+  "111b35cffcfe44b16fbdd27507f165bafd52a2a1": {
+    "verdict": "BUG",
+    "reason": "Lowercase 'as' in CREATE TABLE AS SELECT left has_as False, causing the guard to fire and skip all function grouping, making the parse tree differ based solely on keyword casing.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/867"
+  },
+  "26d7d652218757828b64cfe7914660d529ab21e3": {
+    "verdict": "BUG",
+    "reason": "ROW_FORMAT was tokenized as a Name instead of Keyword, causing the identifier grouper to treat it as an alias of the table name, producing incorrect parse tree.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/860"
+  },
+  "8f978caa7cc777d845d358bfc82ea30110395d32": {
+    "verdict": "BUG",
+    "reason": "Anonymous BEGIN...END blocks containing END FOR/END IF/END WHILE or inline CASE expressions were incorrectly split into multiple statements instead of being kept as one.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/845"
+  },
+  "da67ac16b8fa2c5041458bee728c8a914bed2d37": {
+    "verdict": "BUG",
+    "reason": "When grouping limits were exceeded, functions simply returned None causing parsing to silently fail without any indication of what went wrong.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/827"
+  },
+  "5ca50a2ee9b39e9efeea33e01f132d628144fb69": {
+    "verdict": "BUG",
+    "reason": "sqlparse.split() failed to split BEGIN TRANSACTION...END TRANSACTION blocks correctly, a regression from v0.5.3 that broke production data pipelines.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/826"
+  },
+  "1a3bfbd50b82c05d9adcc51bacba059671dc1bc7": {
+    "verdict": "BUG",
+    "reason": "Semicolons inside BEGIN...END blocks were incorrectly treated as statement terminators, splitting single statements into multiple fragments instead of keeping them intact.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/809"
+  },
+  "e92a032c81d51a6645b4f8c32470481894818ba0": {
+    "verdict": "BUG",
+    "reason": "sqlparse.split behaves incorrectly when IF EXISTS keyword is present inside a BEGIN...END block, incorrectly merging statements that should be split.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/812"
+  },
+  "73c8ba3ae88b608d39740c0776fb15064232258e": {
+    "verdict": "BUG",
+    "reason": "sqlparse.format with strip_comments=True produces wrong output, leaving '--B' instead of empty line when only comments exist on a line.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/801"
+  },
+  "31903e09db518ee3969110073427196ef9cd46c3": {
+    "verdict": "NOT-A-BUG",
+    "reason": "This is a feature addition for pre-commit hook support rather than a behavioral bug fix; it adds new CLI functionality and does not alter existing parsing or formatting logic.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/537"
+  },
+  "af6df6c6627b5fcf98bc7bb46f780e1fa0d1a7ef": {
+    "verdict": "BUG",
+    "reason": "SQL-Hints are being deleted when clearing script from comments, causing loss of optimization hints that are vital for performance in production SQL scripts.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/262"
+  },
+  "e48000a5d76ff4d762821708f99ca90962e25f46": {
+    "verdict": "BUG",
+    "reason": "EXTENSION keyword is parsed as Identifier rather than Keyword, leading to inconsistent tokenization compared to TABLE, INDEX, and other similar keywords.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/785"
+  },
+  "b126ba5b2004474e9ad899456c077f976b761319": {
+    "verdict": "BUG",
+    "reason": "ORDER BY clause with ASC/DESC NULLS FIRST/LAST is tokenized inconsistently, causing wrong parsing and broken formatting indentation.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/532"
+  },
+  "0c4902f3f7aafa8c2e63a375ec307c210842f543": {
+    "verdict": "BUG",
+    "reason": "format with strip_whitespace=True generates different output depending on whether a space is present before the CTE closing parenthesis, causing queries that should format identically to produce different results.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/782"
+  },
+  "791e25de46f443597d99314cfd1a68217bcaf970": {
+    "verdict": "BUG",
+    "reason": "Single statement gets split into multiple statements when containing multiple CASE clauses within a BEGIN block, breaking script runners that depend on correct statement parsing.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/784"
+  },
+  "bf74d8bc2c572b978997f7785747ad262025566c": {
+    "verdict": "BUG",
+    "reason": "Parser produces unnecessarily verbose multi-line formatting for simple CASE WHEN statements when more compact output would improve readability; adds compact option to address this.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/783"
+  },
+  "8b0342730b2e53dcc7887e5b4563d479444ec0ba": {
+    "verdict": "BUG",
+    "reason": "Stripping inline comments concatenates values with keywords, producing invalid SQL: 'SELECT 1/*bar*/ AS foo' becomes 'SELECT 1AS foo' instead of 'SELECT 1 AS foo'.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/772"
+  },
+  "e03b74e608b71dd06824c2cb42421c0d790248e3": {
+    "verdict": "BUG",
+    "reason": "Function.get_parameters() fails when a function has an OVER clause because it assumes the last token is always the parenthesis, causing incorrect parameter extraction.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/768"
+  },
+  "617b8f6cd3c55bacf2c80130901508518753f7e1": {
+    "verdict": "BUG",
+    "reason": "Window functions followed by OVER clauses are not parsed correctly into individual Identifiers, causing the OVER clause to be separated from its function instead of being grouped together.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/701"
+  },
+  "46971e5a804b29e7dbd437155a8ceffab8ef1cd5": {
+    "verdict": "BUG",
+    "reason": "PRIMARY KEY is not parsed correctly, causing improper token structure instead of being recognized as a compound keyword.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/740"
+  },
+  "d76e8a4425d82a6cd704b5e549a8cabefa931341": {
+    "verdict": "BUG",
+    "reason": "TRUNCATE, GRANT, and REVOKE keywords were incorrectly classified, causing ttype checks to return wrong token types (DDL vs DCL).",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/719"
+  },
+  "8c24779e027e92a1ed379fc271e20f540b0f3d20": {
+    "verdict": "BUG",
+    "reason": "JSON operators in select statements cause incorrect indentation with reindent formatting, breaking column alignment.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/542"
+  },
+  "6b05583f119224a43f8047159120edd0228ebd76": {
+    "verdict": "BUG",
+    "reason": "The -> operator is not recognized as a single operator, causing use_space_around_operators=True to break the arrow and produce invalid SQL.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/682"
+  },
+  "5bb129d3fc8a4d031bd37fab8e5ee24a199a9b8c": {
+    "verdict": "BUG",
+    "reason": "Lexer default instance is set before keywords are added, causing intermittent parsing failures when using multiple threads.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/730"
+  },
+  "7334ac99152d02bb09ab0abe79377174c2867f7c": {
+    "verdict": "BUG",
+    "reason": "INSERT statements preceded by GO keyword are misidentified as UNKNOWN type instead of INSERT.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/762"
+  },
+  "39b5a02551de051b1e888135fe71759d5b49a134": {
+    "verdict": "BUG",
+    "reason": "The group_order() function fails to identify an ordered identifier in nested contexts, causing bar DESC to not be grouped together in subqueries, producing incorrect AST structure.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/745"
+  },
+  "fac38cd03bea712e096222f16199a7482a4837da": {
+    "verdict": "BUG",
+    "reason": "copy.deepcopy() on parsed statements raises TypeError: '_TokenType' object is not callable, a crash observable through the public API.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/672"
+  },
+  "fc76056fb8f0ec713a3f2a2b6206a3336932c382": {
+    "verdict": "NOT-A-BUG",
+    "reason": "Redundant characters in regular expression removed; the pattern matches the same input with simplified syntax and produces no different output.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/709"
+  },
+  "dd9d5b91d7aa30e4a000d5370f09dc99378891dc": {
+    "verdict": "BUG",
+    "reason": "The get_type() method returns UNKNOWN instead of the proper DML type when comments appear between the WITH keyword and the identifier.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/632"
+  },
+  "8b789f286e1b6cbf05c15020ea7544cb7f02f8f7": {
+    "verdict": "NOT-A-BUG",
+    "reason": "Switches packaging configuration from setup.py to pyproject.toml with no impact on library runtime behavior.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/685"
+  },
+  "e9241945801808d1db7f76bdccbbe9a200042c37": {
+    "verdict": "BUG",
+    "reason": "The IN keyword is not formatted uppercase when it should be; the behavior changed in 0.4.0 causing the example in docs to produce incorrect output.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/694"
+  },
+  "b72a8ff42f53cba0517b1dd9e8af051b4a060ecf": {
+    "verdict": "BUG",
+    "reason": "The parser failed to recognize unicode characters in identifiers, such as Chinese characters, which prevented proper reindentation of SQL with non-ASCII column names.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/641"
+  },
+  "403de6fc648ac4e012b60b49161c3f5f36dc944a": {
+    "verdict": "BUG",
+    "reason": "Missing upper() calls caused parsing to fail for lowercase create table statements, messing up the grouping logic for DDL statements.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/642"
+  },
+  "0bbfd5f8326fd4291c390858ba8ff482ff5ced70": {
+    "verdict": "BUG",
+    "reason": "The DISTINCTROW keyword from MS Access SQL was not recognized, causing incorrect tokenization of MS Access queries using this predicate.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/677"
+  },
+  "e58781dd632584c783ef082257309ea5efdb6750": {
+    "verdict": "BUG",
+    "reason": "The INDICATOR keyword had a typo (INDITCATOR) in the keywords dictionary, causing the keyword to be completely unrecognized during parsing.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/653"
+  },
+  "e66046785b816e5c2d22f101f36faefd19c4a771": {
+    "verdict": "BUG",
+    "reason": "The regex for scientific numbers used zero-or-more digits which incorrectly matched table aliases like 'e2' as float literals, breaking identifier grouping.",
+    "link": "https://github.com/andialbrecht/sqlparse/issues/399"
+  }
+}
