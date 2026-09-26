@@ -6,6 +6,8 @@ Subcommands:
   setup      <name> <git-url> [--rev SHA] [--deps PKG ...]
   candidates <name> [--since DATE]
   run        <name> [--shas FILE]
+  probe      <name> <sha> <check_file>
+  prove      <name> <sha> <test>
 
 Python 3.12, standard library only.
 """
@@ -13,6 +15,8 @@ from __future__ import annotations
 
 import argparse
 import ast
+import contextlib
+import fcntl
 import json
 import os
 import re
@@ -102,6 +106,32 @@ def threads_dir(name: str) -> Path:
 def die(msg: str) -> None:
     print(f"ERROR: {msg}", file=sys.stderr)
     sys.exit(1)
+
+
+# ---------------------------------------------------------------------------
+# Exclusive per-target lock
+# ---------------------------------------------------------------------------
+
+@contextlib.contextmanager
+def target_lock(name: str):
+    """
+    Hold an exclusive fcntl lock on targets/<name>.lock for the duration of
+    the with-block.  A second caller prints "waiting for <name>'s lock" and
+    blocks until the first releases it.
+    """
+    TARGETS_DIR.mkdir(parents=True, exist_ok=True)
+    lock_path = TARGETS_DIR / f"{name}.lock"
+    with open(lock_path, "w") as lf:
+        # Try a non-blocking acquire first so we can print the wait message.
+        try:
+            fcntl.flock(lf, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            print(f"waiting for {name}'s lock", flush=True)
+            fcntl.flock(lf, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lf, fcntl.LOCK_UN)
 
 
 # ---------------------------------------------------------------------------
@@ -260,11 +290,10 @@ def cmd_setup(args: argparse.Namespace) -> None:
     if collected == 0:
         die("Baseline collected 0 tests. Aborting.")
 
-    # Passed = collected - failed (xfail/xpass handled transparently by plugin recording "failed")
     passed = collected - len(failed)
-    # We don't have a separate skipped count from the plugin — derive from collected vs passed
-    # For the setup.json we record what we know.
-    skipped = 0  # plugin doesn't track skipped; acceptable for setup
+    skipped = report.get("skipped", 0)
+    xfailed = report.get("xfailed", 0)
+    xpassed = report.get("xpassed", 0)
 
     setup_data = {
         "repo": git_url,
@@ -275,6 +304,8 @@ def cmd_setup(args: argparse.Namespace) -> None:
             "collected": collected,
             "passed": passed,
             "skipped": skipped,
+            "xfailed": xfailed,
+            "xpassed": xpassed,
             "seconds": round(elapsed, 2),
         },
     }
@@ -283,7 +314,8 @@ def cmd_setup(args: argparse.Namespace) -> None:
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(setup_data, f, indent=2)
     print(f"Wrote {out_path}")
-    print(f"Baseline: {collected} collected, {passed} passed, {elapsed:.1f}s  ✓")
+    print(f"Baseline: {collected} collected, {passed} passed, {skipped} skipped, "
+          f"{xfailed} xfailed, {xpassed} xpassed, {elapsed:.1f}s  ✓")
 
 
 # ---------------------------------------------------------------------------
@@ -741,13 +773,19 @@ def git_restore(tgt: Path) -> None:
 
 
 def check_tree_clean(tgt: Path) -> bool:
+    """Return True if no tracked-file changes (ignores untracked files)."""
     result = subprocess.run(
         ["git", "status", "--porcelain"],
         cwd=str(tgt),
         capture_output=True,
         text=True,
     )
-    return result.stdout.strip() == ""
+    # Only fail on lines that don't start with '??' (untracked)
+    tracked_changes = [
+        l for l in result.stdout.splitlines()
+        if l and not l.startswith("??")
+    ]
+    return len(tracked_changes) == 0
 
 
 def check_imports(name: str, src_files: list[str]) -> bool:
@@ -906,177 +944,178 @@ def cmd_run(args: argparse.Namespace) -> None:
     rows: list[dict] = []
     plugin_dir = str(PLUGIN_FILE.parent)
 
-    for i, cand in enumerate(candidates):
-        sha = cand["sha"]
-        subject = cand["subject"]
-        src_files = cand.get("src_files", [])
-        status = cand.get("status", "candidate")
+    with target_lock(name):
+        for i, cand in enumerate(candidates):
+            sha = cand["sha"]
+            subject = cand["subject"]
+            src_files = cand.get("src_files", [])
+            status = cand.get("status", "candidate")
 
-        # Pass-through excluded rows
-        if status.startswith("EXCLUDED:"):
-            row = {
-                "sha": sha,
-                "subject": subject,
-                "src_files": src_files,
-                "status": status,
-                "reason": cand.get("reason", ""),
-                "catching_tests": [],
-                "secs": 0.0,
-            }
-            rows.append(row)
-            print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  {status}")
-            continue
-
-        patch_path = diffs_dir(name) / f"{sha}.patch"
-        if not patch_path.exists():
-            row = {
-                "sha": sha,
-                "subject": subject,
-                "src_files": src_files,
-                "status": "NO DATA:missing-patch",
-                "reason": "Patch file not found",
-                "catching_tests": [],
-                "secs": 0.0,
-            }
-            rows.append(row)
-            print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  NO DATA:missing-patch")
-            continue
-
-        row_status = ""
-        row_reason = ""
-        catching_tests: list[str] = []
-        t0 = time.monotonic()
-
-        applied = False
-        try:
-            # Apply reverse patch
-            ok, fail_reason = git_apply_reverse(tgt, patch_path)
-            if not ok:
-                row_status = f"NO DATA:{fail_reason}"
-                row_reason = "git apply -R failed"
-                rows.append({
-                    "sha": sha, "subject": subject, "src_files": src_files,
-                    "status": row_status, "reason": row_reason,
-                    "catching_tests": [], "secs": round(time.monotonic() - t0, 2),
-                })
-                print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  {row_status}")
+            # Pass-through excluded rows
+            if status.startswith("EXCLUDED:"):
+                row = {
+                    "sha": sha,
+                    "subject": subject,
+                    "src_files": src_files,
+                    "status": status,
+                    "reason": cand.get("reason", ""),
+                    "catching_tests": [],
+                    "secs": 0.0,
+                }
+                rows.append(row)
+                print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  {status}")
                 continue
 
-            applied = True
-
-            # Check if the patch actually changed anything
-            clean_check = subprocess.run(
-                ["git", "diff", "--stat", "HEAD"],
-                cwd=str(tgt), capture_output=True, text=True,
-            )
-            if not clean_check.stdout.strip():
-                row_status = "NO DATA:no-change"
-                row_reason = "Reverse patch applied but changed nothing"
-                rows.append({
-                    "sha": sha, "subject": subject, "src_files": src_files,
-                    "status": row_status, "reason": row_reason,
-                    "catching_tests": [], "secs": round(time.monotonic() - t0, 2),
-                })
-                print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  {row_status}")
-                applied = False  # nothing to restore
+            patch_path = diffs_dir(name) / f"{sha}.patch"
+            if not patch_path.exists():
+                row = {
+                    "sha": sha,
+                    "subject": subject,
+                    "src_files": src_files,
+                    "status": "NO DATA:missing-patch",
+                    "reason": "Patch file not found",
+                    "catching_tests": [],
+                    "secs": 0.0,
+                }
+                rows.append(row)
+                print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  NO DATA:missing-patch")
                 continue
 
-            # Check imports
-            if not check_imports(name, src_files):
-                row_status = "NO DATA:import-mismatch"
-                row_reason = "Module imports from outside targets/"
-                rows.append({
-                    "sha": sha, "subject": subject, "src_files": src_files,
-                    "status": row_status, "reason": row_reason,
-                    "catching_tests": [], "secs": round(time.monotonic() - t0, 2),
-                })
-                print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  {row_status}")
-                continue
+            row_status = ""
+            row_reason = ""
+            catching_tests: list[str] = []
+            t0 = time.monotonic()
 
-            # Run test suite
+            applied = False
             try:
-                report = run_suite(name, timeout_secs=timeout_secs)
-            except RuntimeError as e:
-                reason_str = str(e)
-                if "timeout" in reason_str:
-                    row_status = "CAUGHT:timeout"
-                    row_reason = "Test suite timed out"
+                # Apply reverse patch
+                ok, fail_reason = git_apply_reverse(tgt, patch_path)
+                if not ok:
+                    row_status = f"NO DATA:{fail_reason}"
+                    row_reason = "git apply -R failed"
+                    rows.append({
+                        "sha": sha, "subject": subject, "src_files": src_files,
+                        "status": row_status, "reason": row_reason,
+                        "catching_tests": [], "secs": round(time.monotonic() - t0, 2),
+                    })
+                    print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  {row_status}")
+                    continue
+
+                applied = True
+
+                # Check if the patch actually changed anything
+                clean_check = subprocess.run(
+                    ["git", "diff", "--stat", "HEAD"],
+                    cwd=str(tgt), capture_output=True, text=True,
+                )
+                if not clean_check.stdout.strip():
+                    row_status = "NO DATA:no-change"
+                    row_reason = "Reverse patch applied but changed nothing"
+                    rows.append({
+                        "sha": sha, "subject": subject, "src_files": src_files,
+                        "status": row_status, "reason": row_reason,
+                        "catching_tests": [], "secs": round(time.monotonic() - t0, 2),
+                    })
+                    print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  {row_status}")
+                    applied = False  # nothing to restore
+                    continue
+
+                # Check imports
+                if not check_imports(name, src_files):
+                    row_status = "NO DATA:import-mismatch"
+                    row_reason = "Module imports from outside targets/"
+                    rows.append({
+                        "sha": sha, "subject": subject, "src_files": src_files,
+                        "status": row_status, "reason": row_reason,
+                        "catching_tests": [], "secs": round(time.monotonic() - t0, 2),
+                    })
+                    print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  {row_status}")
+                    continue
+
+                # Run test suite
+                try:
+                    report = run_suite(name, timeout_secs=timeout_secs)
+                except RuntimeError as e:
+                    reason_str = str(e)
+                    if "timeout" in reason_str:
+                        row_status = "CAUGHT:timeout"
+                        row_reason = "Test suite timed out"
+                    else:
+                        row_status = "NO DATA:missing-report"
+                        row_reason = "Plugin did not write a report"
+                    rows.append({
+                        "sha": sha, "subject": subject, "src_files": src_files,
+                        "status": row_status, "reason": row_reason,
+                        "catching_tests": [], "secs": round(time.monotonic() - t0, 2),
+                    })
+                    print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  {row_status}")
+                    continue
+
+                collected = len(report.get("collected", []))
+                failed_ids = report.get("failed", [])
+                coll_errors = report.get("collection_errors", [])
+
+                if coll_errors:
+                    row_status = "CAUGHT:collection"
+                    row_reason = f"Collection errors: {coll_errors[:3]}"
+                    rows.append({
+                        "sha": sha, "subject": subject, "src_files": src_files,
+                        "status": row_status, "reason": row_reason,
+                        "catching_tests": [], "secs": round(time.monotonic() - t0, 2),
+                    })
+                    print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  {row_status}")
+                    continue
+
+                if collected == 0:
+                    row_status = "NO DATA:zero-collected"
+                    row_reason = "0 tests collected"
+                    rows.append({
+                        "sha": sha, "subject": subject, "src_files": src_files,
+                        "status": row_status, "reason": row_reason,
+                        "catching_tests": [], "secs": round(time.monotonic() - t0, 2),
+                    })
+                    print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  {row_status}")
+                    continue
+
+                if collected != baseline_collected:
+                    row_status = "NO DATA:count-mismatch"
+                    row_reason = f"Collected {collected} vs baseline {baseline_collected}"
+                    rows.append({
+                        "sha": sha, "subject": subject, "src_files": src_files,
+                        "status": row_status, "reason": row_reason,
+                        "catching_tests": [], "secs": round(time.monotonic() - t0, 2),
+                    })
+                    print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  {row_status}")
+                    continue
+
+                if failed_ids:
+                    # Re-run failing tests individually to confirm (not flaky)
+                    confirmed = rerun_single(name, failed_ids, timeout_secs)
+                    if confirmed:
+                        row_status = "CAUGHT"
+                        row_reason = ""
+                        catching_tests = confirmed
+                    else:
+                        row_status = "NO DATA:flaky"
+                        row_reason = "Failures did not reproduce individually"
                 else:
-                    row_status = "NO DATA:missing-report"
-                    row_reason = "Plugin did not write a report"
-                rows.append({
-                    "sha": sha, "subject": subject, "src_files": src_files,
-                    "status": row_status, "reason": row_reason,
-                    "catching_tests": [], "secs": round(time.monotonic() - t0, 2),
-                })
-                print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  {row_status}")
-                continue
-
-            collected = len(report.get("collected", []))
-            failed_ids = report.get("failed", [])
-            coll_errors = report.get("collection_errors", [])
-
-            if coll_errors:
-                row_status = "CAUGHT:collection"
-                row_reason = f"Collection errors: {coll_errors[:3]}"
-                rows.append({
-                    "sha": sha, "subject": subject, "src_files": src_files,
-                    "status": row_status, "reason": row_reason,
-                    "catching_tests": [], "secs": round(time.monotonic() - t0, 2),
-                })
-                print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  {row_status}")
-                continue
-
-            if collected == 0:
-                row_status = "NO DATA:zero-collected"
-                row_reason = "0 tests collected"
-                rows.append({
-                    "sha": sha, "subject": subject, "src_files": src_files,
-                    "status": row_status, "reason": row_reason,
-                    "catching_tests": [], "secs": round(time.monotonic() - t0, 2),
-                })
-                print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  {row_status}")
-                continue
-
-            if collected != baseline_collected:
-                row_status = "NO DATA:count-mismatch"
-                row_reason = f"Collected {collected} vs baseline {baseline_collected}"
-                rows.append({
-                    "sha": sha, "subject": subject, "src_files": src_files,
-                    "status": row_status, "reason": row_reason,
-                    "catching_tests": [], "secs": round(time.monotonic() - t0, 2),
-                })
-                print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  {row_status}")
-                continue
-
-            if failed_ids:
-                # Re-run failing tests individually to confirm (not flaky)
-                confirmed = rerun_single(name, failed_ids, timeout_secs)
-                if confirmed:
-                    row_status = "CAUGHT"
+                    # No failures, count matches → ESCAPED
+                    row_status = "ESCAPED"
                     row_reason = ""
-                    catching_tests = confirmed
-                else:
-                    row_status = "NO DATA:flaky"
-                    row_reason = "Failures did not reproduce individually"
-            else:
-                # No failures, count matches → ESCAPED
-                row_status = "ESCAPED"
-                row_reason = ""
 
-            rows.append({
-                "sha": sha, "subject": subject, "src_files": src_files,
-                "status": row_status, "reason": row_reason,
-                "catching_tests": catching_tests,
-                "secs": round(time.monotonic() - t0, 2),
-            })
-            print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  {row_status}")
+                rows.append({
+                    "sha": sha, "subject": subject, "src_files": src_files,
+                    "status": row_status, "reason": row_reason,
+                    "catching_tests": catching_tests,
+                    "secs": round(time.monotonic() - t0, 2),
+                })
+                print(f"[{i+1}/{len(candidates)}] {sha[:8]} {subject[:60]}  →  {row_status}")
 
-        finally:
-            if applied:
-                git_restore(tgt)
-                if not check_tree_clean(tgt):
-                    die(f"Working tree is dirty after restoring {sha}. Stopping.")
+            finally:
+                if applied:
+                    git_restore(tgt)
+                    if not check_tree_clean(tgt):
+                        die(f"Working tree is dirty after restoring {sha}. Stopping.")
 
     # Verify we have exactly one row per input sha
     if len(rows) != len(candidates):
@@ -1107,6 +1146,861 @@ def cmd_run(args: argparse.Namespace) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Shared patch / coverage helpers used by probe and prove
+# ---------------------------------------------------------------------------
+
+def _get_patch_info(name: str, sha: str) -> tuple[Path, list[str]]:
+    """
+    Return (patch_path, src_files) for a sha, or die.
+    Also validates that candidates.json has the sha.
+    """
+    ab = antibody_dir(name)
+
+    # Try candidates.json first for src_files
+    candidates_path = ab / "candidates.json"
+    src_files: list[str] = []
+    if candidates_path.exists():
+        with open(candidates_path, "r", encoding="utf-8") as f:
+            all_cands = json.load(f)
+        for c in all_cands:
+            if c["sha"] == sha or c["sha"].startswith(sha):
+                src_files = c.get("src_files", [])
+                sha = c["sha"]  # use full sha
+                break
+
+    patch_path = diffs_dir(name) / f"{sha}.patch"
+    if not patch_path.exists():
+        die(f"No patch found at {patch_path}. Run candidates first.")
+
+    # If src_files not from candidates, derive from git
+    if not src_files:
+        tgt = target_dir(name)
+        all_files = get_commit_files(tgt, sha)
+        src_files = [f for f in all_files if is_source_file(f)]
+
+    return patch_path, src_files
+
+
+def _changed_lines(name: str, sha: str, src_files: list[str]) -> dict[str, set[int]]:
+    """
+    Return {filename: set_of_line_numbers} for lines added by this commit
+    (i.e. the lines present in the fix that aren't in the bug).
+    Line numbers are those in the post-patch (HEAD) file.
+    """
+    tgt = target_dir(name)
+    diff_text = get_commit_diff(tgt, sha, src_files)
+    result: dict[str, set[int]] = {}
+    current_file: str | None = None
+    new_lineno = 0
+
+    for line in diff_text.splitlines():
+        if line.startswith("+++ b/"):
+            current_file = line[6:]
+            result.setdefault(current_file, set())
+        elif line.startswith("@@ "):
+            # @@ -old_start,old_count +new_start,new_count @@
+            m = re.search(r"\+(\d+)", line)
+            if m:
+                new_lineno = int(m.group(1)) - 1
+        elif current_file is not None:
+            if line.startswith("+") and not line.startswith("+++"):
+                new_lineno += 1
+                result[current_file].add(new_lineno)
+            elif line.startswith("-") and not line.startswith("---"):
+                pass  # removed line, no new_lineno increment
+            else:
+                new_lineno += 1
+
+    return result
+
+
+def _is_data_only_change(name: str, sha: str, src_files: list[str]) -> bool:
+    """
+    Return True if every changed line is at module level (outside any function
+    or class body), i.e. the patch only edits module-level tables or constants.
+    """
+    tgt = target_dir(name)
+    changed = _changed_lines(name, sha, src_files)
+    if not changed:
+        return False
+
+    for fpath, linenos in changed.items():
+        if not linenos:
+            continue
+        # Read the file at HEAD
+        full_path = tgt / fpath
+        if not full_path.exists():
+            return False
+        src = full_path.read_text(encoding="utf-8", errors="replace")
+        try:
+            tree = ast.parse(src)
+        except SyntaxError:
+            return False
+
+        # Collect line ranges of all function/class bodies
+        def_ranges: list[tuple[int, int]] = []
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                start = node.lineno
+                end = node.end_lineno or start
+                def_ranges.append((start, end))
+
+        for lineno in linenos:
+            inside = any(s <= lineno <= e for s, e in def_ranges)
+            if inside:
+                return False  # at least one changed line is inside a def/class
+
+    return True
+
+
+def _run_check_script(python: Path, check_file: Path, cwd: Path,
+                      extra_env: dict | None = None, timeout: int = 30) -> str | None:
+    """
+    Run check_file as a script, capturing stdout+stderr combined.
+    Returns the combined output string, or None on timeout.
+    """
+    env = os.environ.copy()
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    if extra_env:
+        env.update(extra_env)
+
+    try:
+        proc = subprocess.run(
+            [str(python), str(check_file)],
+            cwd=str(cwd),
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+        # Return stdout; if empty use stderr (some bugs print to stderr)
+        out = proc.stdout
+        return out
+    except subprocess.TimeoutExpired:
+        return None
+
+
+def _run_check_with_coverage(
+    python: Path,
+    check_file: Path,
+    cwd: Path,
+    changed_lines: dict[str, set[int]],
+    timeout: int = 30,
+) -> tuple[str | None, bool]:
+    """
+    Run check_file under coverage (or sys.settrace fallback).
+    Returns (output, hit_changed_line).
+    output is None on timeout.
+    """
+    # Build a small wrapper that uses sys.settrace to track covered lines
+    # relative to the target package files.
+    # We pass the changed_lines info via a temp JSON file.
+    with tempfile.NamedTemporaryFile(
+        suffix=".json", mode="w", delete=False
+    ) as tf:
+        json.dump(
+            {k: list(v) for k, v in changed_lines.items()},
+            tf,
+        )
+        changed_json = tf.name
+
+    with tempfile.NamedTemporaryFile(
+        suffix=".json", mode="w", delete=False
+    ) as tf:
+        hit_json = tf.name
+
+    wrapper = textwrap.dedent(f"""
+import sys, json, os, runpy
+
+_changed_json = {changed_json!r}
+_hit_json = {hit_json!r}
+
+with open(_changed_json) as _f:
+    _changed = {{k: set(v) for k, v in json.load(_f).items()}}
+
+_hit = False
+
+def _tracer(frame, event, arg):
+    global _hit
+    if not _hit and event in ('line', 'call'):
+        fname = frame.f_code.co_filename
+        # normalise to relative path matching the keys in _changed
+        for rel, lines in _changed.items():
+            if fname.endswith(os.sep + rel) or fname.endswith('/' + rel):
+                if frame.f_lineno in lines:
+                    _hit = True
+    return _tracer
+
+sys.settrace(_tracer)
+try:
+    runpy.run_path({str(check_file)!r}, run_name='__main__')
+finally:
+    sys.settrace(None)
+    with open(_hit_json, 'w') as _f:
+        json.dump({{'hit': _hit}}, _f)
+""").strip()
+
+    with tempfile.NamedTemporaryFile(
+        suffix=".py", mode="w", delete=False
+    ) as wf:
+        wf.write(wrapper)
+        wrapper_path = wf.name
+
+    env = os.environ.copy()
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+
+    output: str | None = None
+    hit = False
+    try:
+        proc = subprocess.run(
+            [str(python), wrapper_path],
+            cwd=str(cwd),
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+        output = proc.stdout
+        if os.path.exists(hit_json) and os.path.getsize(hit_json) > 0:
+            with open(hit_json) as f:
+                data = json.load(f)
+            hit = bool(data.get("hit", False))
+    except subprocess.TimeoutExpired:
+        output = None
+    finally:
+        for p in (changed_json, hit_json, wrapper_path):
+            try:
+                os.unlink(p)
+            except OSError:
+                pass
+
+    return output, hit
+
+
+# ---------------------------------------------------------------------------
+# probe
+# ---------------------------------------------------------------------------
+
+def cmd_probe(args: argparse.Namespace) -> None:
+    name: str = args.name
+    sha: str = args.sha
+    check_file_arg: str = args.check_file
+
+    sys.stdout.reconfigure(line_buffering=True)
+
+    check_file = Path(check_file_arg).resolve()
+    if not check_file.exists():
+        die(f"Check file not found: {check_file}")
+
+    with target_lock(name):
+        _do_probe(name, sha, check_file)
+
+
+def _do_probe(name: str, sha: str, check_file: Path) -> None:
+    ab = antibody_dir(name)
+    tgt = target_dir(name)
+    python = venv_python(name)
+
+    patch_path, src_files = _get_patch_info(name, sha)
+
+    # Resolve full sha if abbreviated
+    result = subprocess.run(
+        ["git", "rev-parse", sha],
+        cwd=str(tgt), capture_output=True, text=True,
+    )
+    if result.returncode == 0:
+        sha = result.stdout.strip()
+
+    probes_dir = ab / "probes"
+    probes_dir.mkdir(parents=True, exist_ok=True)
+    out_path = probes_dir / f"{sha}.json"
+
+    # Determine changed lines (for coverage check)
+    changed = _changed_lines(name, sha, src_files)
+
+    def run_check(with_fix: bool) -> str | None:
+        """Run check twice and return output if both agree, else None (non-deterministic)."""
+        env_extra: dict = {}
+        outputs: list[str] = []
+        for _ in range(2):
+            out = _run_check_script(python, check_file, tgt, extra_env=env_extra)
+            if out is None:
+                return None  # timeout
+            outputs.append(out)
+        if outputs[0] != outputs[1]:
+            return None  # not deterministic
+        return outputs[0]
+
+    # Run with fix in (HEAD as-is)
+    if not check_tree_clean(tgt):
+        die(f"Working tree has tracked changes before probe — ensure it is clean first.")
+
+    output_with_fix = run_check(with_fix=True)
+    if output_with_fix is None:
+        verdict = "INVALID (not deterministic)"
+        result_data = {
+            "verdict": verdict,
+            "check": str(check_file),
+            "output_with_fix": None,
+            "output_without_fix": None,
+        }
+        print(verdict)
+        with open(out_path, "w") as f:
+            json.dump(result_data, f, indent=2)
+        return
+
+    if output_with_fix.strip() == "":
+        verdict = "INVALID (prints nothing)"
+        result_data = {
+            "verdict": verdict,
+            "check": str(check_file),
+            "output_with_fix": output_with_fix,
+            "output_without_fix": None,
+        }
+        print(verdict)
+        with open(out_path, "w") as f:
+            json.dump(result_data, f, indent=2)
+        return
+
+    # Now apply reverse patch (put the bug back)
+    applied = False
+    output_without_fix: str | None = None
+    try:
+        ok, fail_reason = git_apply_reverse(tgt, patch_path)
+        if not ok:
+            verdict = f"INVALID (patch did not apply: {fail_reason})"
+            result_data = {
+                "verdict": verdict,
+                "check": str(check_file),
+                "output_with_fix": output_with_fix,
+                "output_without_fix": None,
+            }
+            print(verdict)
+            with open(out_path, "w") as f:
+                json.dump(result_data, f, indent=2)
+            return
+
+        applied = True
+
+        output_without_fix = run_check(with_fix=False)
+        if output_without_fix is None:
+            verdict = "INVALID (not deterministic)"
+            result_data = {
+                "verdict": verdict,
+                "check": str(check_file),
+                "output_with_fix": output_with_fix,
+                "output_without_fix": None,
+            }
+            print(verdict)
+            with open(out_path, "w") as f:
+                json.dump(result_data, f, indent=2)
+            return
+
+        if output_without_fix.strip() == "":
+            verdict = "INVALID (prints nothing)"
+            result_data = {
+                "verdict": verdict,
+                "check": str(check_file),
+                "output_with_fix": output_with_fix,
+                "output_without_fix": output_without_fix,
+            }
+            print(verdict)
+            with open(out_path, "w") as f:
+                json.dump(result_data, f, indent=2)
+            return
+
+    finally:
+        if applied:
+            git_restore(tgt)
+            if not check_tree_clean(tgt):
+                die(f"Working tree is dirty after restoring {sha}. Stopping.")
+
+    # Coverage check: does the script ever execute a changed line?
+    # We do this once with the fix in (HEAD), using sys.settrace.
+    _, hit_changed = _run_check_with_coverage(python, check_file, tgt, changed)
+
+    if not hit_changed:
+        verdict = "INVALID (never reaches the changed code)"
+        result_data = {
+            "verdict": verdict,
+            "check": str(check_file),
+            "output_with_fix": output_with_fix,
+            "output_without_fix": output_without_fix,
+        }
+        print(verdict)
+        with open(out_path, "w") as f:
+            json.dump(result_data, f, indent=2)
+        return
+
+    # Data-only change: all changed lines are at module level
+    data_only = _is_data_only_change(name, sha, src_files)
+
+    if output_with_fix == output_without_fix:
+        if data_only:
+            verdict = "INCONCLUSIVE (data-only change)"
+        else:
+            verdict = "NO CHANGE FOUND"
+    else:
+        verdict = "CHANGED"
+
+    result_data = {
+        "verdict": verdict,
+        "check": str(check_file),
+        "output_with_fix": output_with_fix,
+        "output_without_fix": output_without_fix,
+    }
+    print(verdict)
+    with open(out_path, "w") as f:
+        json.dump(result_data, f, indent=2)
+    print(f"Wrote {out_path}")
+
+
+# ---------------------------------------------------------------------------
+# prove
+# ---------------------------------------------------------------------------
+
+# Pattern: reads from the package source
+_READS_SOURCE_RE = re.compile(
+    r"inspect\.getsource"
+    r"|open\s*\(",
+    re.MULTILINE,
+)
+
+
+def _test_reads_package_source(test_path: Path, tgt: Path) -> bool:
+    """
+    Return True if the test file appears to read the package's source files.
+    Heuristic: contains inspect.getsource or an open() call that could
+    open a file inside the package directory.
+    """
+    src = test_path.read_text(encoding="utf-8", errors="replace")
+    if "inspect.getsource" in src:
+        return True
+    # Check for open() calls targeting package paths
+    # We look for string literals that look like package paths
+    if "open(" in src:
+        # Find any string that contains a package directory component
+        pkg_names = {p.name for p in tgt.iterdir() if (tgt / p).is_dir() and (tgt / p / "__init__.py").exists()}
+        pkg_names.discard("tests")
+        for pkg in pkg_names:
+            # If a string containing the package name appears near an open( call
+            if re.search(r'open\s*\([^)]*' + re.escape(pkg) + r'[^)]*\)', src):
+                return True
+    return False
+
+
+def _run_pytest_single(
+    name: str,
+    test_node: str,
+    extra_args: list[str] | None = None,
+    timeout_secs: int = 60,
+) -> dict:
+    """
+    Run a single test (or test file) and return the report dict.
+    Raises RuntimeError on timeout or missing report.
+    """
+    python = venv_python(name)
+    tgt = target_dir(name)
+    plugin_dir = str(PLUGIN_FILE.parent)
+
+    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
+        rpath = Path(tmp.name)
+
+    env = os.environ.copy()
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    env["ANTIBODY_REPORT_PATH"] = str(rpath)
+    existing_pp = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = plugin_dir + (":" + existing_pp if existing_pp else "")
+
+    cmd = [
+        str(python), "-m", "pytest",
+        "-p", "no:cacheprovider",
+        "-p", "antibody_plugin",
+        "-v",
+        test_node,
+    ]
+    if extra_args:
+        cmd.extend(extra_args)
+
+    as_limit = 1_500 * 1024 * 1024
+    def set_limits():
+        try:
+            resource.setrlimit(resource.RLIMIT_AS, (as_limit, as_limit))
+        except Exception:
+            pass
+
+    try:
+        proc = subprocess.run(
+            cmd,
+            cwd=str(tgt),
+            env=env,
+            timeout=timeout_secs,
+            preexec_fn=set_limits,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        output = proc.stdout.decode(errors="replace") + proc.stderr.decode(errors="replace")
+    except subprocess.TimeoutExpired:
+        rpath.unlink(missing_ok=True)
+        raise RuntimeError("timeout")
+
+    if not rpath.exists() or rpath.stat().st_size == 0:
+        rpath.unlink(missing_ok=True)
+        raise RuntimeError(f"missing-report\n{output}")
+
+    with open(rpath, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    rpath.unlink(missing_ok=True)
+    data["_output"] = output
+    return data
+
+
+def _is_allowed_failure(failed_node_id: str, output: str) -> bool:
+    """
+    Return True if a test failure is an AssertionError or pytest's "DID NOT RAISE".
+    ImportError, AttributeError, NameError, or TypeError about missing symbols
+    do NOT count.
+    """
+    # Look for the failure reason in the output
+    # The output from -v will have FAILED lines and tracebacks.
+    # We scan for the relevant exceptions.
+    bad_patterns = [
+        r"ImportError",
+        r"AttributeError",
+        r"NameError",
+        r"TypeError.*object is not callable",
+        r"TypeError.*takes \d+ positional argument",
+        r"TypeError.*missing \d+ required",
+        r"TypeError.*unexpected keyword argument",
+        r"has no attribute",
+        r"cannot import name",
+        r"No module named",
+    ]
+    # Extract the section for this test
+    # Look for the test's section in the output
+    test_name = failed_node_id.split("::")[-1]
+    for pat in bad_patterns:
+        if re.search(pat, output, re.IGNORECASE):
+            return False
+    # Positive patterns
+    good_patterns = [
+        r"AssertionError",
+        r"DID NOT RAISE",
+        r"assert ",
+    ]
+    for pat in good_patterns:
+        if re.search(pat, output, re.IGNORECASE):
+            return True
+    # If we can't tell, be conservative
+    return False
+
+
+def cmd_prove(args: argparse.Namespace) -> None:
+    name: str = args.name
+    sha: str = args.sha
+    test_arg: str = args.test
+
+    sys.stdout.reconfigure(line_buffering=True)
+
+    with target_lock(name):
+        _do_prove(name, sha, test_arg)
+
+
+def _do_prove(name: str, sha: str, test_arg: str) -> None:
+    ab = antibody_dir(name)
+    tgt = target_dir(name)
+    python = venv_python(name)
+
+    patch_path, src_files = _get_patch_info(name, sha)
+
+    # Resolve full sha if abbreviated
+    result = subprocess.run(
+        ["git", "rev-parse", sha],
+        cwd=str(tgt), capture_output=True, text=True,
+    )
+    if result.returncode == 0:
+        sha = result.stdout.strip()
+
+    proofs_dir = ab / "proofs"
+    proofs_dir.mkdir(parents=True, exist_ok=True)
+    out_path = proofs_dir / f"{sha}.json"
+
+    # Resolve test path: could be a file path or node ID
+    # If it contains "::", treat as node ID; otherwise as a file path
+    test_node = test_arg  # use as-is for pytest
+    test_file: Path | None = None
+    if "::" in test_arg:
+        test_file = tgt / test_arg.split("::")[0]
+    else:
+        test_file = Path(test_arg) if Path(test_arg).is_absolute() else tgt / test_arg
+        if not test_file.exists():
+            # Try relative to cwd
+            test_file = Path(test_arg).resolve()
+
+    # Reject test that reads the package source
+    if test_file and test_file.exists():
+        if _test_reads_package_source(test_file, tgt):
+            msg = "NOT PROVEN: test reads package source"
+            print(msg)
+            with open(out_path, "w") as f:
+                json.dump({
+                    "verdict": "NOT PROVEN",
+                    "step": "rejected: test reads package source",
+                    "runs_with_fix": [],
+                    "runs_without_fix": [],
+                    "failure_messages": [],
+                }, f, indent=2)
+            return
+
+    # Find other test files to --ignore (from tests/antibody/ only)
+    tests_dir = tgt / "tests" / "antibody"
+    ignore_args: list[str] = []
+    if tests_dir.exists() and test_file:
+        for tf in tests_dir.iterdir():
+            if tf.suffix == ".py" and tf.resolve() != test_file.resolve():
+                ignore_args.extend(["--ignore", str(tf)])
+
+    # -------------------------
+    # Step 1: Run with fix (HEAD), 3 times — must collect and pass all 3
+    # -------------------------
+    runs_with_fix: list[dict] = []
+    for run_i in range(3):
+        try:
+            report = _run_pytest_single(name, test_node, extra_args=ignore_args)
+        except RuntimeError as e:
+            msg = f"NOT PROVEN: step 1\n{e}"
+            print(msg)
+            with open(out_path, "w") as f:
+                json.dump({
+                    "verdict": "NOT PROVEN",
+                    "step": f"step 1 run {run_i+1}: {e}",
+                    "runs_with_fix": runs_with_fix,
+                    "runs_without_fix": [],
+                    "failure_messages": [],
+                }, f, indent=2)
+            return
+
+        runs_with_fix.append({
+            "run": run_i + 1,
+            "collected": len(report.get("collected", [])),
+            "failed": report.get("failed", []),
+            "output": report.get("_output", ""),
+        })
+
+        # Check: collected > 0
+        if len(report.get("collected", [])) == 0:
+            msg = f"NOT PROVEN: step 1\nRun {run_i+1}: test not collected"
+            print(msg)
+            with open(out_path, "w") as f:
+                json.dump({
+                    "verdict": "NOT PROVEN",
+                    "step": f"step 1 run {run_i+1}: not collected",
+                    "runs_with_fix": runs_with_fix,
+                    "runs_without_fix": [],
+                    "failure_messages": [],
+                }, f, indent=2)
+            return
+
+        # Check: no failures
+        if report.get("failed"):
+            msg = f"NOT PROVEN: step 1\nRun {run_i+1}: test failed with fix in"
+            print(msg)
+            with open(out_path, "w") as f:
+                json.dump({
+                    "verdict": "NOT PROVEN",
+                    "step": f"step 1 run {run_i+1}: test failed with fix in",
+                    "runs_with_fix": runs_with_fix,
+                    "runs_without_fix": [],
+                    "failure_messages": [],
+                }, f, indent=2)
+            return
+
+    # -------------------------
+    # Step 2: Apply reverse patch (bug back), run 3 times — must fail all 3
+    # with only AssertionError or DID NOT RAISE
+    # -------------------------
+    applied = False
+    runs_without_fix: list[dict] = []
+    failure_messages: list[str] = []
+    try:
+        ok, fail_reason = git_apply_reverse(tgt, patch_path)
+        if not ok:
+            msg = f"NOT PROVEN: step 2\ngit apply -R failed: {fail_reason}"
+            print(msg)
+            with open(out_path, "w") as f:
+                json.dump({
+                    "verdict": "NOT PROVEN",
+                    "step": f"step 2: patch did not apply ({fail_reason})",
+                    "runs_with_fix": runs_with_fix,
+                    "runs_without_fix": [],
+                    "failure_messages": [],
+                }, f, indent=2)
+            return
+
+        applied = True
+
+        for run_i in range(3):
+            try:
+                report = _run_pytest_single(name, test_node, extra_args=ignore_args)
+            except RuntimeError as e:
+                msg = f"NOT PROVEN: step 2\n{e}"
+                print(msg)
+                with open(out_path, "w") as f:
+                    json.dump({
+                        "verdict": "NOT PROVEN",
+                        "step": f"step 2 run {run_i+1}: {e}",
+                        "runs_with_fix": runs_with_fix,
+                        "runs_without_fix": runs_without_fix,
+                        "failure_messages": failure_messages,
+                    }, f, indent=2)
+                return
+
+            output = report.get("_output", "")
+            failed = report.get("failed", [])
+
+            runs_without_fix.append({
+                "run": run_i + 1,
+                "collected": len(report.get("collected", [])),
+                "failed": failed,
+                "output": output,
+            })
+
+            # Check: collection errors → not collected properly
+            coll_errors = report.get("collection_errors", [])
+            if coll_errors:
+                msg = f"NOT PROVEN: step 2\nRun {run_i+1}: collection error with bug back"
+                print(msg)
+                with open(out_path, "w") as f:
+                    json.dump({
+                        "verdict": "NOT PROVEN",
+                        "step": f"step 2 run {run_i+1}: collection error",
+                        "runs_with_fix": runs_with_fix,
+                        "runs_without_fix": runs_without_fix,
+                        "failure_messages": failure_messages,
+                    }, f, indent=2)
+                return
+
+            # Must fail
+            if not failed:
+                msg = f"NOT PROVEN: step 2\nRun {run_i+1}: test still passes with bug back"
+                print(msg)
+                with open(out_path, "w") as f:
+                    json.dump({
+                        "verdict": "NOT PROVEN",
+                        "step": f"step 2 run {run_i+1}: test still passes with bug back",
+                        "runs_with_fix": runs_with_fix,
+                        "runs_without_fix": runs_without_fix,
+                        "failure_messages": failure_messages,
+                    }, f, indent=2)
+                return
+
+            # All failures must be AssertionError or DID NOT RAISE
+            for fnode in failed:
+                if not _is_allowed_failure(fnode, output):
+                    msg = f"NOT PROVEN: step 2\nRun {run_i+1}: failure is not AssertionError/DID NOT RAISE"
+                    print(msg)
+                    print(output[:2000])
+                    with open(out_path, "w") as f:
+                        json.dump({
+                            "verdict": "NOT PROVEN",
+                            "step": f"step 2 run {run_i+1}: failure not AssertionError (got disallowed exception)",
+                            "runs_with_fix": runs_with_fix,
+                            "runs_without_fix": runs_without_fix,
+                            "failure_messages": failure_messages,
+                        }, f, indent=2)
+                    return
+
+            failure_messages.append(output)
+
+    finally:
+        if applied:
+            git_restore(tgt)
+            if not check_tree_clean(tgt):
+                die(f"Working tree is dirty after restoring {sha}. Stopping.")
+
+    # -------------------------
+    # Step 3: git status is clean except tests/antibody/
+    # -------------------------
+    status_result = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=str(tgt), capture_output=True, text=True,
+    )
+    dirty_lines = [
+        l for l in status_result.stdout.splitlines()
+        # ignore untracked files (?? prefix) — editable installs leave .egg-info etc.
+        # also allow untracked tests/antibody/ files (the test being proved)
+        if l.strip() and not l.startswith("??")
+    ]
+    if dirty_lines:
+        msg = f"NOT PROVEN: step 3\ngit status shows unexpected dirty files:\n" + "\n".join(dirty_lines)
+        print(msg)
+        with open(out_path, "w") as f:
+            json.dump({
+                "verdict": "NOT PROVEN",
+                "step": "step 3: working tree dirty after restore",
+                "runs_with_fix": runs_with_fix,
+                "runs_without_fix": runs_without_fix,
+                "failure_messages": failure_messages,
+            }, f, indent=2)
+        return
+
+    # -------------------------
+    # Step 4: full suite at HEAD (with this test) still green
+    # -------------------------
+    full_ignore_args: list[str] = []
+    if tests_dir.exists() and test_file:
+        for tf in tests_dir.iterdir():
+            if tf.suffix == ".py" and tf.resolve() != test_file.resolve():
+                full_ignore_args.extend(["--ignore", str(tf)])
+
+    try:
+        full_report = _run_pytest_single(
+            name,
+            test_node,
+            extra_args=full_ignore_args,
+            timeout_secs=300,
+        )
+    except RuntimeError as e:
+        msg = f"NOT PROVEN: step 4\n{e}"
+        print(msg)
+        with open(out_path, "w") as f:
+            json.dump({
+                "verdict": "NOT PROVEN",
+                "step": f"step 4: {e}",
+                "runs_with_fix": runs_with_fix,
+                "runs_without_fix": runs_without_fix,
+                "failure_messages": failure_messages,
+            }, f, indent=2)
+        return
+
+    full_failed = full_report.get("failed", [])
+    if full_failed:
+        msg = f"NOT PROVEN: step 4\nFull suite has failures: {full_failed[:5]}"
+        print(msg)
+        with open(out_path, "w") as f:
+            json.dump({
+                "verdict": "NOT PROVEN",
+                "step": f"step 4: full suite has failures",
+                "runs_with_fix": runs_with_fix,
+                "runs_without_fix": runs_without_fix,
+                "failure_messages": failure_messages,
+            }, f, indent=2)
+        return
+
+    # All steps passed
+    print("PROVEN")
+    with open(out_path, "w") as f:
+        json.dump({
+            "verdict": "PROVEN",
+            "step": None,
+            "runs_with_fix": runs_with_fix,
+            "runs_without_fix": runs_without_fix,
+            "failure_messages": failure_messages,
+        }, f, indent=2)
+    print(f"Wrote {out_path}")
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -1134,6 +2028,18 @@ def main() -> None:
     p_run.add_argument("name", help="Target name")
     p_run.add_argument("--shas", default=None, dest="shas", help="File with SHAs to run (one per line)")
 
+    # probe
+    p_probe = sub.add_parser("probe", help="Probe a check script against a fix")
+    p_probe.add_argument("name", help="Target name")
+    p_probe.add_argument("sha", help="Commit SHA of the fix")
+    p_probe.add_argument("check_file", help="Path to the check script")
+
+    # prove
+    p_prove = sub.add_parser("prove", help="Prove a regression test against a fix")
+    p_prove.add_argument("name", help="Target name")
+    p_prove.add_argument("sha", help="Commit SHA of the fix")
+    p_prove.add_argument("test", help="Test file path or pytest node ID")
+
     args = parser.parse_args()
 
     if args.command == "setup":
@@ -1142,6 +2048,10 @@ def main() -> None:
         cmd_candidates(args)
     elif args.command == "run":
         cmd_run(args)
+    elif args.command == "probe":
+        cmd_probe(args)
+    elif args.command == "prove":
+        cmd_prove(args)
     else:
         parser.print_help()
         sys.exit(1)

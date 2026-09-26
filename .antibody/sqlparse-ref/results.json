@@ -4,8 +4,10 @@
   "baseline": {
     "collected": 509,
     "passed": 509,
-    "skipped": 0,
-    "seconds": 2.58
+    "skipped": 2,
+    "xfailed": 2,
+    "xpassed": 1,
+    "seconds": 3.13
   },
   "rows": [
     {
@@ -17,7 +19,7 @@
       "status": "ESCAPED",
       "reason": "",
       "catching_tests": [],
-      "secs": 2.7
+      "secs": 3.01
     },
     {
       "sha": "d1d80602741f77ec78e5a04ce4719244cf32352e",
@@ -41,7 +43,7 @@
       "status": "ESCAPED",
       "reason": "",
       "catching_tests": [],
-      "secs": 2.54
+      "secs": 2.81
     },
     {
       "sha": "a194d3187b04b0aed7a935c3401f068236fb6264",
@@ -55,7 +57,7 @@
         "tests/test_regressions.py::test_between_leading_dot_float_issue601[a BETWEEN .03 AND .06]",
         "tests/test_regressions.py::test_between_leading_dot_float_issue601[a between .03 and .06]"
       ],
-      "secs": 3.28
+      "secs": 3.62
     },
     {
       "sha": "f66d12c245412f28c58f045b646eb53c0e691b8b",
@@ -68,7 +70,7 @@
       "catching_tests": [
         "tests/test_parse.py::test_get_real_name_multi_part_dotted"
       ],
-      "secs": 2.92
+      "secs": 3.21
     },
     {
       "sha": "ac3b9e0b25627feb42a7053074b6549df81dcfaf",
@@ -81,7 +83,7 @@
       "catching_tests": [
         "tests/test_regressions.py::test_materialized_view_issue752"
       ],
-      "secs": 2.85
+      "secs": 3.24
     },
     {
       "sha": "111b35cffcfe44b16fbdd27507f165bafd52a2a1",
@@ -94,7 +96,7 @@
       "catching_tests": [
         "tests/test_grouping.py::test_grouping_alias_ctas_lowercase_as"
       ],
-      "secs": 3.05
+      "secs": 3.23
     },
     {
       "sha": "26d7d652218757828b64cfe7914660d529ab21e3",
@@ -107,7 +109,7 @@
       "catching_tests": [
         "tests/test_regressions.py::test_alter_table_row_format_issue773"
       ],
-      "secs": 2.84
+      "secs": 3.17
     },
     {
       "sha": "8f978caa7cc777d845d358bfc82ea30110395d32",
@@ -176,7 +178,7 @@
       "catching_tests": [
         "tests/test_format.py::TestFormat::test_strip_comments_single"
       ],
-      "secs": 3.13
+      "secs": 3.18
     },
     {
       "sha": "31903e09db518ee3969110073427196ef9cd46c3",
@@ -194,7 +196,7 @@
         "tests/test_cli.py::test_cli_single_file_inplace",
         "tests/test_cli.py::test_cli_error_handling_continues"
       ],
-      "secs": 5.36
+      "secs": 5.8
     },
     {
       "sha": "f1d2d688bc542ee2645f8ecdf8f7bd9488a96136",
@@ -216,7 +218,7 @@
       "status": "ESCAPED",
       "reason": "",
       "catching_tests": [],
-      "secs": 2.66
+      "secs": 2.84
     },
     {
       "sha": "274310956473601f53f8d0b7e9024f364b5f04b6",
@@ -260,7 +262,7 @@
       "status": "ESCAPED",
       "reason": "",
       "catching_tests": [],
-      "secs": 2.53
+      "secs": 2.81
     },
     {
       "sha": "b126ba5b2004474e9ad899456c077f976b761319",
@@ -284,7 +286,7 @@
       "catching_tests": [
         "tests/test_format.py::test_strip_ws_removes_trailing_ws_in_groups"
       ],
-      "secs": 2.88
+      "secs": 3.19
     },
     {
       "sha": "791e25de46f443597d99314cfd1a68217bcaf970",
@@ -333,7 +335,7 @@
       "catching_tests": [
         "tests/test_grouping.py::test_grouping_function"
       ],
-      "secs": 2.84
+      "secs": 3.18
     },
     {
       "sha": "617b8f6cd3c55bacf2c80130901508518753f7e1",
@@ -358,7 +360,7 @@
       "catching_tests": [
         "tests/test_regressions.py::test_primary_key_issue740"
       ],
-      "secs": 2.79
+      "secs": 3.13
     },
     {
       "sha": "d76e8a4425d82a6cd704b5e549a8cabefa931341",
@@ -369,7 +371,7 @@
       "status": "ESCAPED",
       "reason": "",
       "catching_tests": [],
-      "secs": 2.67
+      "secs": 2.83
     },
     {
       "sha": "8c24779e027e92a1ed379fc271e20f540b0f3d20",
@@ -380,7 +382,7 @@
       "status": "ESCAPED",
       "reason": "",
       "catching_tests": [],
-      "secs": 2.79
+      "secs": 2.82
     },
     {
       "sha": "6b05583f119224a43f8047159120edd0228ebd76",
@@ -399,7 +401,7 @@
         "tests/test_parse.py::test_json_operators[@>]",
         "tests/test_parse.py::test_json_operators[<@]"
       ],
-      "secs": 5.25
+      "secs": 5.41
     },
     {
       "sha": "5bb129d3fc8a4d031bd37fab8e5ee24a199a9b8c",
@@ -435,7 +437,7 @@
       "catching_tests": [
         "tests/test_grouping.py::test_grouping_nested_identifier_with_order"
       ],
-      "secs": 2.91
+      "secs": 3.23
     },
     {
       "sha": "fac38cd03bea712e096222f16199a7482a4837da",
@@ -448,7 +450,7 @@
       "catching_tests": [
         "tests/test_regressions.py::test_copy_issue672"
       ],
-      "secs": 3.06
+      "secs": 3.29
     },
     {
       "sha": "fc76056fb8f0ec713a3f2a2b6206a3336932c382",
@@ -472,7 +474,7 @@
       "catching_tests": [
         "tests/test_regressions.py::test_comment_between_cte_clauses_issue632"
       ],
-      "secs": 2.97
+      "secs": 3.19
     },
     {
       "sha": "8b789f286e1b6cbf05c15020ea7544cb7f02f8f7",
@@ -538,7 +540,7 @@
       "status": "ESCAPED",
       "reason": "",
       "catching_tests": [],
-      "secs": 2.51
+      "secs": 2.8
     },
     {
       "sha": "e66046785b816e5c2d22f101f36faefd19c4a771",
