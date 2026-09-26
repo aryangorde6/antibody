@@ -1,0 +1,13 @@
+diff --git a/tomlkit/items.py b/tomlkit/items.py
+index ca6878c..0e36b88 100644
+--- a/tomlkit/items.py
++++ b/tomlkit/items.py
+@@ -1674,7 +1674,7 @@ class String(str, Item):
+         self._original = original
+ 
+     def unwrap(self) -> str:
+-        return self.as_string()
++        return str(self)
+ 
+     @property
+     def discriminant(self) -> int:

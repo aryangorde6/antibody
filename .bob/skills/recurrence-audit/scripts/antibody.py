@@ -290,10 +290,12 @@ def cmd_setup(args: argparse.Namespace) -> None:
     if collected == 0:
         die("Baseline collected 0 tests. Aborting.")
 
-    passed = collected - len(failed)
     skipped = report.get("skipped", 0)
     xfailed = report.get("xfailed", 0)
     xpassed = report.get("xpassed", 0)
+    # passed + skipped + xfailed + xpassed must equal collected.
+    # The plugin counts each test exactly once across these four buckets.
+    passed = collected - len(failed) - skipped - xfailed - xpassed
 
     setup_data = {
         "repo": git_url,
@@ -443,6 +445,29 @@ def ast_equal_after_strip(old_src: str, new_src: str) -> bool:
         return False
 
 
+# Git trailers that may contain person names or emails: any "<Word>-by:" key
+# (Signed-off-by and the rest) and "Cc:". Matched case-insensitively.
+_PERSON_TRAILER_RE = re.compile(
+    r"^([A-Za-z]+(?:-[A-Za-z]+)*-by|Cc)\s*:",
+    re.IGNORECASE,
+)
+
+
+def _clean_subject(raw_subject: str) -> str:
+    """
+    Return only the first line of a commit subject, stripping any
+    Signed-off-by and other "<Word>-by:" trailers that may have been
+    appended when git's %s format captured the whole first paragraph.
+    """
+    # Split on newlines; take only the first non-empty line.
+    lines = raw_subject.splitlines()
+    first_line = lines[0].strip() if lines else raw_subject.strip()
+    # Also guard: if the subject itself starts with a trailer, return empty
+    if _PERSON_TRAILER_RE.match(first_line):
+        return ""
+    return first_line
+
+
 def get_commit_log(tgt: Path, since: str | None) -> list[dict]:
     """
     Return list of {sha, subject, body} for non-merge commits since `since`.
@@ -450,7 +475,9 @@ def get_commit_log(tgt: Path, since: str | None) -> list[dict]:
     """
     sep = "\x1e"  # ASCII record separator — safe in subprocess args
     rec_end = "\x1f"  # ASCII unit separator — marks end of one commit record
-    fmt = f"%H{sep}%s{sep}%b{rec_end}"
+    # Use %B (raw body = subject + blank line + body) so we always get the full
+    # first paragraph when git's %s would join it.  We derive subject ourselves.
+    fmt = f"%H{sep}%B{rec_end}"
     cmd = ["git", "log", "--no-merges", f"--format={fmt}"]
     if since:
         cmd.append(f"--since={since}")
@@ -461,12 +488,40 @@ def get_commit_log(tgt: Path, since: str | None) -> list[dict]:
         block = block.strip()
         if not block:
             continue
-        parts = block.split(sep, 2)
+        parts = block.split(sep, 1)
         if len(parts) < 2:
             continue
         sha = parts[0].strip()
-        subject = parts[1].strip()
-        body = parts[2].strip() if len(parts) > 2 else ""
+        raw_body = parts[1]  # full commit message (subject + body)
+
+        # Derive subject: first non-empty line of the message.
+        msg_lines = raw_body.splitlines()
+        subject_line = ""
+        for ln in msg_lines:
+            stripped = ln.strip()
+            if stripped:
+                subject_line = stripped
+                break
+
+        subject = _clean_subject(subject_line)
+        if not subject:
+            continue  # skip commits with no usable subject
+
+        # Build body: lines after the first non-empty line,
+        # dropping any trailer lines that name a person.
+        after_subject = msg_lines[msg_lines.index(msg_lines[0]) + 1:] if msg_lines else []
+        # Find the index of the subject line in the original list
+        subj_idx = 0
+        for idx, ln in enumerate(msg_lines):
+            if ln.strip() == subject_line.strip():
+                subj_idx = idx
+                break
+        body_lines = [
+            ln for ln in msg_lines[subj_idx + 1:]
+            if not _PERSON_TRAILER_RE.match(ln.strip())
+        ]
+        body = "\n".join(body_lines).strip()
+
         if sha:
             commits.append({"sha": sha, "subject": subject, "body": body})
     return commits
@@ -2001,6 +2056,1023 @@ def _do_prove(name: str, sha: str, test_arg: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# ledger helpers
+# ---------------------------------------------------------------------------
+
+import hashlib
+import datetime
+import html as _html_mod
+import shutil
+
+
+def _sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _isodate() -> str:
+    return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+
+
+def _map_status(row: dict, proofs_dir: Path | None, probes_dir: Path | None,
+                curated: dict, explanations: dict) -> dict:
+    """
+    Return ledger row fields for one results row.
+    curated: {sha: {verdict, reason, link}}
+    explanations: {sha: "one line"}
+    """
+    sha = row["sha"]
+    raw_status = row.get("status", "")
+    subject = row.get("subject", "")
+    catching_tests = row.get("catching_tests", [])
+    reason = row.get("reason", "")
+
+    line = explanations.get(sha, subject)
+
+    # Curated override
+    if sha in curated:
+        c = curated[sha]
+        if c.get("verdict") == "NOT A BUG":
+            return {
+                "sha": sha,
+                "status": "NOT A BUG",
+                "line": line,
+                "reason": c.get("reason", ""),
+                "link": c.get("link", ""),
+                "catching_tests": catching_tests,
+                "proof_code": None,
+                "probe_output": None,
+            }
+
+    if raw_status == "CAUGHT":
+        proof_code = None
+        if proofs_dir:
+            proof_path = proofs_dir / f"{sha}.json"
+            if proof_path.exists():
+                try:
+                    proof_data = json.loads(proof_path.read_text())
+                    runs = proof_data.get("runs_with_fix", [])
+                    if runs:
+                        proof_code = runs[0].get("output", "")
+                except Exception:
+                    pass
+        return {
+            "sha": sha,
+            "status": "CAUGHT",
+            "line": line,
+            "reason": reason,
+            "link": "",
+            "catching_tests": catching_tests,
+            "proof_code": proof_code,
+            "probe_output": None,
+        }
+
+    if raw_status == "ESCAPED":
+        probe_output = None
+        probe_verdict = None
+        if probes_dir:
+            probe_path = probes_dir / f"{sha}.json"
+            if probe_path.exists():
+                try:
+                    probe_data = json.loads(probe_path.read_text())
+                    probe_verdict = probe_data.get("verdict", "")
+                    probe_output = probe_data
+                except Exception:
+                    pass
+
+        if probe_verdict == "NO CHANGE FOUND":
+            out_w = probe_output.get("output_with_fix", "")
+            out_wo = probe_output.get("output_without_fix", "")
+            check = probe_output.get("check", "")
+            return {
+                "sha": sha,
+                "status": "NO CHANGE FOUND",
+                "line": line,
+                "reason": f"check: {check}",
+                "link": "",
+                "catching_tests": [],
+                "proof_code": None,
+                "probe_output": {"check": check, "with_fix": out_w, "without_fix": out_wo},
+            }
+        elif probe_verdict == "CHANGED":
+            out_w = probe_output.get("output_with_fix", "")
+            out_wo = probe_output.get("output_without_fix", "")
+            check = probe_output.get("check", "")
+            return {
+                "sha": sha,
+                "status": "STILL EXPOSED",
+                "line": line,
+                "reason": "probe shows change; no test catches it",
+                "link": "",
+                "catching_tests": [],
+                "proof_code": None,
+                "probe_output": {"check": check, "with_fix": out_w, "without_fix": out_wo},
+            }
+        else:
+            probe_note = probe_verdict or ""
+            return {
+                "sha": sha,
+                "status": "STILL EXPOSED",
+                "line": line,
+                "reason": probe_note if probe_note else "no test catches it",
+                "link": "",
+                "catching_tests": [],
+                "proof_code": None,
+                "probe_output": None,
+            }
+
+    if raw_status.startswith("NO DATA"):
+        detail = raw_status[len("NO DATA:"):] if ":" in raw_status else ""
+        return {
+            "sha": sha,
+            "status": "NO DATA",
+            "line": line,
+            "reason": f"{detail}: {reason}" if detail else reason,
+            "link": "",
+            "catching_tests": [],
+            "proof_code": None,
+            "probe_output": None,
+        }
+
+    if raw_status.startswith("EXCLUDED"):
+        detail = raw_status[len("EXCLUDED:"):] if ":" in raw_status else ""
+        return {
+            "sha": sha,
+            "status": "EXCLUDED",
+            "line": line,
+            "reason": f"{detail}: {reason}" if detail else reason,
+            "link": "",
+            "catching_tests": [],
+            "proof_code": None,
+            "probe_output": None,
+        }
+
+    # Fallback
+    return {
+        "sha": sha,
+        "status": raw_status,
+        "line": line,
+        "reason": reason,
+        "link": "",
+        "catching_tests": catching_tests,
+        "proof_code": None,
+        "probe_output": None,
+    }
+
+
+_HTML_PAGE_TEMPLATE = r"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Antibody &#8212; {name}</title>
+<style>
+:root {{
+  --bg: #fff;
+  --surface: #f7f8fa;
+  --border: #e5e7eb;
+  --text: #1f2328;
+  --muted: #57606a;
+  --accent: #3b82d4;
+  --green: #1a7f37;
+  --red: #cf222e;
+  --orange: #9a6700;
+  --purple: #7c5cd8;
+  --font: -apple-system, "Segoe UI", system-ui, sans-serif;
+}}
+@media (prefers-color-scheme: dark) {{
+  :root {{
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --red: #f85149;
+    --orange: #d29922;
+    --purple: #bc8cff;
+  }}
+}}
+*, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+body {{
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  padding: 0 1rem 3rem;
+  max-width: 900px;
+  margin: 0 auto;
+}}
+h1 {{ font-size: 1.3rem; font-weight: 700; margin: 1.5rem 0 0.25rem; }}
+h2 {{ font-size: 1rem; font-weight: 600; margin: 1.2rem 0 0.5rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }}
+.question {{ font-size: 1.05rem; margin: 1.2rem 0 0.4rem; font-weight: 600; }}
+.summary-line {{ font-size: 0.95rem; margin-bottom: 0.2rem; }}
+.summary-note {{ font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; }}
+.filters {{ display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 1rem 0 0.5rem; align-items: center; }}
+.filter-btn {{
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.82rem;
+  cursor: pointer;
+  white-space: nowrap;
+}}
+.filter-btn.active {{ border-color: var(--accent); background: var(--accent); color: #fff; }}
+#search {{
+  flex: 1 1 12rem;
+  min-width: 0;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+}}
+table {{ width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.88rem; }}
+th {{
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 2px solid var(--border);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  white-space: nowrap;
+}}
+td {{ padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--border); vertical-align: top; word-break: break-word; }}
+tr:last-child td {{ border-bottom: none; }}
+.badge {{
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}}
+.badge-caught {{ background: #dafbe1; color: var(--green); }}
+.badge-now-caught {{ background: #dafbe1; color: var(--green); border: 1px solid var(--green); }}
+.badge-exposed {{ background: #fff0f0; color: var(--red); }}
+.badge-no-change {{ background: #fff8e1; color: var(--orange); }}
+.badge-no-data {{ background: var(--surface); color: var(--muted); }}
+.badge-not-a-bug {{ background: #f0f0ff; color: var(--purple); }}
+.badge-excluded {{ background: var(--surface); color: var(--muted); }}
+@media (prefers-color-scheme: dark) {{
+  .badge-caught {{ background: #0f2a1a; }}
+  .badge-now-caught {{ background: #0f2a1a; }}
+  .badge-exposed {{ background: #2a0f0f; }}
+  .badge-no-change {{ background: #2a1f00; }}
+  .badge-not-a-bug {{ background: #1a1030; }}
+}}
+details summary {{ cursor: pointer; color: var(--accent); font-size: 0.82rem; user-select: none; }}
+details summary:hover {{ text-decoration: underline; }}
+pre {{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.3rem;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.78rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin-top: 0.4rem;
+  max-height: 14rem;
+}}
+.test-id {{ font-family: monospace; font-size: 0.8rem; color: var(--muted); }}
+.sha-link {{ font-family: monospace; font-size: 0.8rem; }}
+.hidden {{ display: none !important; }}
+.commands-box {{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  padding: 0.7rem 1rem;
+  margin: 1rem 0;
+}}
+.cmd-line {{
+  font-family: monospace;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.2rem 0;
+}}
+.method-box {{
+  background: var(--surface);
+  border-left: 3px solid var(--border);
+  padding: 0.6rem 0.9rem;
+  margin: 0.5rem 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+}}
+footer {{
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+}}
+@media (max-width: 500px) {{
+  body {{ font-size: 14px; }}
+  table {{ font-size: 0.82rem; }}
+  th, td {{ padding: 0.35rem 0.4rem; }}
+}}
+</style>
+</head>
+<body>
+<h1>Antibody &#8212; {name}</h1>
+<p class="question">Of the bugs this project already fixed, how many could come back without a test noticing?</p>
+<p class="summary-line">{summary_line}</p>
+<p class="summary-note">{summary_note}</p>
+
+<div class="filters" id="filters">
+{filter_buttons}
+  <input id="search" type="search" placeholder="Filter by subject or SHA&hellip;" aria-label="Filter rows">
+</div>
+
+<noscript><p style="color:var(--muted);font-size:.85rem;margin:.5rem 0">Enable JavaScript for interactive filtering.</p></noscript>
+
+<table id="rows-table">
+<thead>
+<tr>
+  <th>Status</th>
+  <th>Description</th>
+  <th>Fix</th>
+  <th>Issue</th>
+</tr>
+</thead>
+<tbody id="rows-body">
+{rows_html}
+</tbody>
+</table>
+
+<h2>Run it on your own project</h2>
+<div class="commands-box">
+  <div class="cmd-line"><code>python3.12 antibody.py setup &lt;name&gt; &lt;git-url&gt; [--rev SHA] [--deps PKG ...]</code></div>
+  <div class="cmd-line"><code>python3.12 antibody.py candidates &lt;name&gt;</code></div>
+  <div class="cmd-line"><code>python3.12 antibody.py run &lt;name&gt;</code></div>
+  <div class="cmd-line"><code>python3.12 antibody.py ledger &lt;name&gt;</code></div>
+</div>
+
+<h2>Method</h2>
+<div class="method-box">
+  For each past bug fix: apply the reverse patch, run the test suite, restore the code.
+  A <strong>CAUGHT</strong> row means at least one test failed when the bug was put back.
+  A <strong>NOW CAUGHT</strong> row means a new test was proved and just re-passed that check.
+  A <strong>STILL EXPOSED</strong> row means the patch applied, all tests stayed green,
+  and a probe confirmed the behaviour changed (or no check could tell either way).
+  The row says which. <strong>NO CHANGE FOUND</strong>: a probe ran but both outputs matched
+  (listed under &ldquo;Excluded after a check&rdquo;, with the check and both outputs).
+  <strong>NO DATA</strong>: the patch could not be applied or no tests ran (with its reason).
+</div>
+
+<h2>What this can&rsquo;t tell you</h2>
+<div class="method-box">
+  Rows with no data are <em>unknown</em>, never safe.
+  &ldquo;Caught&rdquo; means a test noticed the regression &mdash; not that the test is perfect or complete.
+  A green suite on a reverted patch is a lower bound, not a guarantee.
+</div>
+
+<script>
+(function() {{
+  var activeFilter = "all";
+  var searchVal = "";
+  function applyFilters() {{
+    document.querySelectorAll("#rows-body tr").forEach(function(row) {{
+      var s = row.dataset.status || "";
+      var text = (row.dataset.subject || "") + " " + (row.dataset.sha || "");
+      var matchFilter = (activeFilter === "all") || (s === activeFilter);
+      var matchSearch = !searchVal || text.toLowerCase().indexOf(searchVal) !== -1;
+      row.classList.toggle("hidden", !(matchFilter && matchSearch));
+    }});
+  }}
+  document.querySelectorAll(".filter-btn").forEach(function(btn) {{
+    btn.addEventListener("click", function() {{
+      activeFilter = btn.dataset.filter;
+      document.querySelectorAll(".filter-btn").forEach(function(b) {{ b.classList.remove("active"); }});
+      btn.classList.add("active");
+      applyFilters();
+    }});
+  }});
+  var search = document.getElementById("search");
+  if (search) {{
+    search.addEventListener("input", function() {{
+      searchVal = search.value.toLowerCase();
+      applyFilters();
+    }});
+  }}
+}})();
+</script>
+
+<footer>Made with IBM Bob</footer>
+</body>
+</html>"""
+
+
+def _e(s: str) -> str:
+    """HTML-escape a string."""
+    return _html_mod.escape(str(s), quote=True)
+
+
+def _status_badge(status: str) -> str:
+    cls_map = {
+        "CAUGHT": "badge-caught",
+        "NOW CAUGHT": "badge-now-caught",
+        "STILL EXPOSED": "badge-exposed",
+        "NO CHANGE FOUND": "badge-no-change",
+        "NO DATA": "badge-no-data",
+        "NOT A BUG": "badge-not-a-bug",
+        "EXCLUDED": "badge-excluded",
+    }
+    cls = cls_map.get(status, "badge-no-data")
+    return f'<span class="badge {cls}" data-status="{_e(status)}">{_e(status)}</span>'
+
+
+def _build_row_html(lr: dict, repo_url: str) -> str:
+    sha = lr["sha"]
+    status = lr["status"]
+    line = lr["line"]
+    reason = lr.get("reason", "")
+    catching_tests = lr.get("catching_tests", [])
+    proof_code = lr.get("proof_code")
+    probe_output = lr.get("probe_output")
+    link = lr.get("link", "")
+
+    badge = _status_badge(status)
+
+    # Fix commit link
+    commit_url = ""
+    if repo_url and repo_url.startswith("https://github.com"):
+        commit_url = f"{repo_url.rstrip('/')}/commit/{sha}"
+    sha_cell = (
+        f'<a class="sha-link" href="{_e(commit_url)}" target="_blank" rel="noopener">{_e(sha[:8])}</a>'
+        if commit_url else
+        f'<span class="sha-link">{_e(sha[:8])}</span>'
+    )
+
+    # Issue link
+    issue_cell = ""
+    if link:
+        label = link.rstrip("/").rsplit("/", 1)[-1]
+        issue_cell = f'<a href="{_e(link)}" target="_blank" rel="noopener">{_e(label)}</a>'
+
+    # Description cell
+    desc_parts = [_e(line)]
+    if reason and status not in ("CAUGHT", "NOW CAUGHT", "STILL EXPOSED", "NOT A BUG"):
+        desc_parts.append(f'<br><small style="color:var(--muted)">{_e(reason)}</small>')
+
+    # Expandable evidence
+    evidence_parts = []
+    if catching_tests:
+        ids_html = "".join(f'<div class="test-id">{_e(t)}</div>' for t in catching_tests)
+        evidence_parts.append(f"<strong>Catching tests:</strong>{ids_html}")
+    if proof_code:
+        evidence_parts.append(f'<strong>New test:</strong><pre>{_e(proof_code[:2000])}</pre>')
+    if probe_output:
+        check = probe_output.get("check", "")
+        with_fix = probe_output.get("with_fix", "")
+        without_fix = probe_output.get("without_fix", "")
+        evidence_parts.append(
+            f'<strong>Probe:</strong> <code>{_e(check)}</code>'
+            f'<br>With fix:<pre>{_e(str(with_fix)[:800])}</pre>'
+            f'Without fix:<pre>{_e(str(without_fix)[:800])}</pre>'
+        )
+    if status == "STILL EXPOSED" and reason:
+        evidence_parts.append(f'<strong>Note:</strong> {_e(reason)}')
+
+    evidence_html = ""
+    if evidence_parts:
+        inner = "".join(f"<p style='margin:.3rem 0'>{p}</p>" for p in evidence_parts)
+        evidence_html = f'<details><summary>Evidence</summary>{inner}</details>'
+
+    desc_cell = "".join(desc_parts) + evidence_html
+
+    return (
+        f'<tr data-status="{_e(status)}" data-sha="{_e(sha)}" data-subject="{_e(line)}">'
+        f'<td>{badge}</td>'
+        f'<td>{desc_cell}</td>'
+        f'<td>{sha_cell}</td>'
+        f'<td>{issue_cell}</td>'
+        f'</tr>'
+    )
+
+
+def _build_ledger_page(name: str, ledger: dict, repo_url: str) -> str:
+    from collections import Counter
+    rows = ledger["rows"]
+    stats = ledger["stats"]
+    n_caught_before = stats["caught_before"]
+    n_caught_after = stats["caught_after"]
+    n_y = stats["checkable"]
+
+    if n_y == 0:
+        summary_line = "No past bug could be re-checked on today&#39;s code"
+    else:
+        summary_line = (
+            f"Before: {n_caught_before} of {n_y} caught. "
+            f"After: {n_caught_after} of {n_y} caught."
+        )
+
+    summary_note = (
+        f"Y = {n_y}: the number of past bugs where the patch applied, tests ran, and a check was "
+        f"possible (CAUGHT + NOW CAUGHT + STILL EXPOSED + NO CHANGE FOUND). "
+        f"Excluded, NO DATA, and NOT A BUG rows are not counted."
+    )
+
+    status_counts: Counter = Counter(r["status"] for r in rows)
+    all_count = len(rows)
+
+    status_order = [
+        ("all", "All"),
+        ("CAUGHT", "Caught"),
+        ("NOW CAUGHT", "Now Caught"),
+        ("STILL EXPOSED", "Still Exposed"),
+        ("NO CHANGE FOUND", "No Change Found"),
+        ("NO DATA", "No Data"),
+        ("NOT A BUG", "Not a Bug"),
+        ("EXCLUDED", "Excluded"),
+    ]
+
+    filter_buttons = []
+    for key, label in status_order:
+        cnt = all_count if key == "all" else status_counts.get(key, 0)
+        if key == "all" or cnt > 0:
+            active = " active" if key == "all" else ""
+            filter_buttons.append(
+                f'  <button class="filter-btn{active}" data-filter="{_e(key)}">'
+                f'{_e(label)} ({cnt})'
+                f'</button>'
+            )
+
+    filter_buttons_html = "\n".join(filter_buttons)
+    rows_html = "\n".join(_build_row_html(r, repo_url) for r in rows)
+
+    return _HTML_PAGE_TEMPLATE.format(
+        name=_e(name),
+        summary_line=summary_line,
+        summary_note=summary_note,
+        filter_buttons=filter_buttons_html,
+        rows_html=rows_html,
+    )
+
+
+def cmd_ledger(args: argparse.Namespace) -> None:
+    name: str = args.name
+    publish: bool = args.publish
+
+    ab = antibody_dir(name)
+    candidates_path = ab / "candidates.json"
+    results_path = ab / "results.json"
+    if not candidates_path.exists():
+        die(f"No candidates.json for '{name}'. Run candidates first.")
+    if not results_path.exists():
+        die(f"No results.json for '{name}'. Run run first.")
+
+    with open(candidates_path, "r", encoding="utf-8") as f:
+        candidates: list[dict] = json.load(f)
+    with open(results_path, "r", encoding="utf-8") as f:
+        results_data: dict = json.load(f)
+
+    rows_in = results_data.get("rows", [])
+
+    if len(rows_in) != len(candidates):
+        die(
+            f"Row count mismatch: results.json has {len(rows_in)} rows but "
+            f"candidates.json has {len(candidates)} entries. Re-run `run {name}`."
+        )
+
+    setup_path = ab / "setup.json"
+    if not setup_path.exists():
+        die(f"No setup.json for '{name}'.")
+    with open(setup_path, "r", encoding="utf-8") as f:
+        setup_data: dict = json.load(f)
+
+    repo_url: str = setup_data.get("repo", "")
+
+    probes_dir = ab / "probes"
+    proofs_dir = ab / "proofs"
+    curated_path = ab / "curated.json"
+    explanations_path = ab / "explanations.json"
+
+    curated: dict = {}
+    curated_sha256: str | None = None
+    curated_ts: str | None = None
+    if curated_path.exists():
+        with open(curated_path, "r", encoding="utf-8") as f:
+            curated = json.load(f)
+        curated_sha256 = _sha256_file(curated_path)
+        curated_ts = datetime.datetime.fromtimestamp(
+            curated_path.stat().st_mtime, tz=datetime.timezone.utc
+        ).isoformat(timespec="seconds")
+
+    explanations: dict = {}
+    if explanations_path.exists():
+        with open(explanations_path, "r", encoding="utf-8") as f:
+            explanations = json.load(f)
+
+    # Re-prove: for every sha with a PROVEN proof, re-run prove.
+    # Only rows that re-prove successfully are eligible for NOW CAUGHT.
+    reproved_shas: set[str] = set()
+    if proofs_dir.exists():
+        for proof_file in sorted(proofs_dir.glob("*.json")):
+            try:
+                proof_data = json.loads(proof_file.read_text())
+            except Exception:
+                continue
+            if proof_data.get("verdict") != "PROVEN":
+                continue
+            sha = proof_file.stem
+            # Find the matching results row to get the test node
+            result_row = next((r for r in rows_in if r["sha"] == sha), None)
+            if not result_row:
+                continue
+            catching = result_row.get("catching_tests", [])
+            if not catching:
+                continue
+            test_node = catching[0]
+            patch_path = diffs_dir(name) / f"{sha}.patch"
+            if not patch_path.exists():
+                continue
+            with target_lock(name):
+                try:
+                    _do_prove(name, sha, test_node)
+                    new_proof_path = proofs_dir / f"{sha}.json"
+                    new_proof = json.loads(new_proof_path.read_text())
+                    if new_proof.get("verdict") == "PROVEN":
+                        reproved_shas.add(sha)
+                except Exception:
+                    pass
+
+    # Build ledger rows
+    ledger_rows: list[dict] = []
+    for row in rows_in:
+        sha = row["sha"]
+        lr = _map_status(
+            row,
+            proofs_dir if proofs_dir.exists() else None,
+            probes_dir if probes_dir.exists() else None,
+            curated,
+            explanations,
+        )
+        if sha in reproved_shas and lr["status"] == "CAUGHT":
+            lr["status"] = "NOW CAUGHT"
+        ledger_rows.append(lr)
+
+    checkable_statuses = {"CAUGHT", "NOW CAUGHT", "STILL EXPOSED", "NO CHANGE FOUND"}
+    y_rows = [r for r in ledger_rows if r["status"] in checkable_statuses]
+    n_before_caught = sum(1 for r in ledger_rows if r["status"] == "CAUGHT")
+    n_after_caught = sum(1 for r in ledger_rows if r["status"] in ("CAUGHT", "NOW CAUGHT"))
+    n_y = len(y_rows)
+
+    run_time = results_data.get("run_time") or datetime.datetime.fromtimestamp(
+        results_path.stat().st_mtime, tz=datetime.timezone.utc
+    ).isoformat(timespec="seconds")
+
+    ledger: dict = {
+        "name": name,
+        "repo": repo_url,
+        "head": setup_data.get("head", ""),
+        "run_time": run_time,
+        "ledger_time": _isodate(),
+        "curated": (
+            {"sha256": curated_sha256, "timestamp": curated_ts}
+            if curated_sha256 else None
+        ),
+        "stats": {
+            "total_candidates": len(candidates),
+            "checkable": n_y,
+            "caught_before": n_before_caught,
+            "caught_after": n_after_caught,
+        },
+        "rows": ledger_rows,
+    }
+
+    out_path = ab / "ledger.json"
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(ledger, f, indent=2)
+    print(f"Wrote {out_path}")
+
+    page_html = _build_ledger_page(name, ledger, repo_url)
+    page_path = ab / "index.html"
+    with open(page_path, "w", encoding="utf-8") as f:
+        f.write(page_html)
+    print(f"Wrote {page_path}")
+
+    if publish:
+        _publish_ledger(name, ab, ledger, page_html, proofs_dir)
+
+
+def _publish_ledger(name: str, ab: Path, ledger: dict, page_html: str, proofs_dir: Path) -> None:
+    root = ROOT
+    audits_dir = root / "audits" / name
+    audits_dir.mkdir(parents=True, exist_ok=True)
+
+    shutil.copy2(ab / "ledger.json", audits_dir / "ledger.json")
+    print(f"Published {audits_dir / 'ledger.json'}")
+
+    if proofs_dir.exists():
+        for proof_file in proofs_dir.glob("*.json"):
+            try:
+                proof_data = json.loads(proof_file.read_text())
+            except Exception:
+                continue
+            if proof_data.get("verdict") != "PROVEN":
+                continue
+            tgt = target_dir(name)
+            tests_ab_dir = tgt / "tests" / "antibody"
+            if tests_ab_dir.exists():
+                for tf in tests_ab_dir.glob("*.py"):
+                    dest = audits_dir / tf.name
+                    shutil.copy2(tf, dest)
+                    print(f"Published {dest}")
+
+    site_dir = root / "site" / name
+    site_dir.mkdir(parents=True, exist_ok=True)
+    site_page = site_dir / "index.html"
+    with open(site_page, "w", encoding="utf-8") as f:
+        f.write(page_html)
+    print(f"Published {site_page}")
+
+    _rebuild_site_index(root)
+
+
+def _rebuild_site_index(root: Path) -> None:
+    audits_root = root / "audits"
+    site_root = root / "site"
+    site_root.mkdir(parents=True, exist_ok=True)
+
+    entries: list[str] = []
+    if audits_root.exists():
+        for folder in sorted(audits_root.iterdir()):
+            if folder.is_dir():
+                entries.append(folder.name)
+
+    links = "\n".join(
+        f'    <li><a href="{_e(e)}/index.html">{_e(e)}</a></li>'
+        for e in entries
+    )
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Antibody Audits</title>
+<style>
+body {{ font-family: -apple-system, "Segoe UI", system-ui, sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; }}
+</style>
+</head>
+<body>
+<h1>Antibody Audits</h1>
+<ul>
+{links}
+</ul>
+<footer style="margin-top:2rem;padding-top:.5rem;border-top:1px solid #e5e7eb;text-align:center;font-size:.75rem;color:#57606a">Made with IBM Bob</footer>
+</body>
+</html>"""
+
+    with open(site_root / "index.html", "w", encoding="utf-8") as f:
+        f.write(html)
+    print(f"Rebuilt {site_root / 'index.html'}")
+
+
+# ---------------------------------------------------------------------------
+# gate
+# ---------------------------------------------------------------------------
+
+def _parse_accepted_yaml(path: Path) -> list[dict]:
+    """
+    Parse antibody-accepted.yaml using only the standard library.
+    Pinned format:
+      - sha: <full sha>
+        reason: <one sentence>
+
+    Returns list of {sha, reason} dicts.
+    Raises ValueError naming the offending line on format errors.
+    Never imports yaml.
+    """
+    lines = path.read_text(encoding="utf-8").splitlines()
+    entries: list[dict] = []
+    i = 0
+    while i < len(lines):
+        stripped = lines[i].rstrip()
+        if not stripped:
+            i += 1
+            continue
+        if not stripped.startswith("- sha:"):
+            raise ValueError(
+                f"line {i+1}: expected '- sha: <full-sha>', got: {stripped!r}"
+            )
+        sha_val = stripped[len("- sha:"):].strip()
+        if not sha_val:
+            raise ValueError(f"line {i+1}: sha value is empty")
+        i += 1
+        while i < len(lines) and not lines[i].rstrip():
+            i += 1
+        if i >= len(lines):
+            raise ValueError(
+                f"After sha '{sha_val}': expected '  reason:' line, got end of file"
+            )
+        reason_line = lines[i].rstrip()
+        if not reason_line.startswith("  reason:"):
+            raise ValueError(
+                f"line {i+1}: expected '  reason: <sentence>', got: {reason_line!r}"
+            )
+        reason_val = reason_line[len("  reason:"):].strip()
+        if not reason_val:
+            raise ValueError(
+                f"line {i+1}: reason for sha '{sha_val}' is empty — "
+                "a real sentence is required"
+            )
+        if reason_val.lower() in ("todo", "tbd", "fixme", "?"):
+            raise ValueError(
+                f"line {i+1}: reason for sha '{sha_val}' is a placeholder "
+                f"({reason_val!r}) — write a real sentence"
+            )
+        entries.append({"sha": sha_val, "reason": reason_val})
+        i += 1
+    return entries
+
+
+def cmd_gate(args: argparse.Namespace) -> None:
+    name: str = args.name
+
+    ab = antibody_dir(name)
+    ledger_path = ab / "ledger.json"
+    if not ledger_path.exists():
+        print(f"ERROR: no ledger.json for '{name}'. Run ledger first.", file=sys.stderr)
+        sys.exit(1)
+
+    with open(ledger_path, "r", encoding="utf-8") as f:
+        ledger: dict = json.load(f)
+
+    rows: list[dict] = ledger.get("rows", [])
+    if not rows:
+        print("ERROR: ledger is empty — nothing was checked.", file=sys.stderr)
+        print("checked 0 of 0; 0 need re-audit; 0 accepted exposures")
+        sys.exit(1)
+
+    # Load antibody-accepted.yaml
+    accepted_path = ROOT / "antibody-accepted.yaml"
+    accepted_entries: list[dict] = []
+    if accepted_path.exists():
+        try:
+            accepted_entries = _parse_accepted_yaml(accepted_path)
+        except ValueError as e:
+            print(f"ERROR: antibody-accepted.yaml: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    accepted_shas = {e["sha"] for e in accepted_entries}
+
+    # Warn about stale entries
+    exposed_shas = {r["sha"] for r in rows if r["status"] == "STILL EXPOSED"}
+    for entry in accepted_entries:
+        if entry["sha"] not in exposed_shas:
+            print(
+                f"WARNING: stale entry in antibody-accepted.yaml: "
+                f"{entry['sha'][:12]} is not STILL EXPOSED"
+            )
+
+    failures: list[str] = []
+    warnings_list: list[str] = []
+    checked = 0
+    re_audit_count = 0
+    accepted_exposures = 0
+
+    tgt = target_dir(name)
+
+    for row in rows:
+        sha = row["sha"]
+        status = row["status"]
+
+        if status in ("CAUGHT", "NOW CAUGHT"):
+            checked += 1
+            catching_tests = row.get("catching_tests", [])
+
+            # Rows caught by timeout or collection error have no test IDs
+            has_no_ids = not catching_tests
+            patch_path = diffs_dir(name) / f"{sha}.patch"
+
+            if not patch_path.exists():
+                # Can't re-verify — warn
+                warnings_list.append(
+                    f"re-audit needed: {sha[:12]} (no patch file)"
+                )
+                re_audit_count += 1
+                continue
+
+            # Check patch still applies
+            check_result = subprocess.run(
+                ["git", "apply", "--check", "-R", str(patch_path)],
+                cwd=str(tgt),
+                capture_output=True,
+                text=True,
+            )
+            if check_result.returncode != 0:
+                warnings_list.append(f"re-audit needed: {sha[:12]}")
+                re_audit_count += 1
+                continue
+
+            if has_no_ids:
+                # Run full suite; expect some kind of failure (timeout or test failures)
+                ok, _ = git_apply_reverse(tgt, patch_path)
+                if not ok:
+                    warnings_list.append(f"re-audit needed: {sha[:12]}")
+                    re_audit_count += 1
+                    continue
+                try:
+                    try:
+                        report = run_suite(name, timeout_secs=120)
+                        if not report.get("failed") and not report.get("collection_errors"):
+                            failures.append(
+                                f"catching test missing: {sha[:12]} "
+                                "(full suite passed with bug back)"
+                            )
+                    except RuntimeError:
+                        pass  # timeout / missing-report counts as expected failure
+                finally:
+                    git_restore(tgt)
+            else:
+                # Step 1: each catching test must be collected and pass at HEAD
+                for tid in catching_tests:
+                    try:
+                        report = run_suite(name, extra_args=[tid], timeout_secs=120)
+                    except RuntimeError as e:
+                        failures.append(f"catching test missing: {tid} (error: {e})")
+                        continue
+                    collected_ids = report.get("collected", [])
+                    if not collected_ids:
+                        failures.append(f"catching test missing: {tid}")
+                        continue
+                    # Check node ID is actually collected (handle parametrized suffixes)
+                    if not any(
+                        nid == tid or nid.startswith(tid) or nid.endswith(tid.split("::")[-1])
+                        for nid in collected_ids
+                    ):
+                        failures.append(f"catching test missing: {tid}")
+                        continue
+                    if report.get("failed"):
+                        failures.append(f"catching test already fails at HEAD: {tid}")
+
+                # Step 2: each catching test must fail with bug back
+                ok, _ = git_apply_reverse(tgt, patch_path)
+                if not ok:
+                    warnings_list.append(f"re-audit needed: {sha[:12]}")
+                    re_audit_count += 1
+                    continue
+                try:
+                    for tid in catching_tests:
+                        try:
+                            report = run_suite(name, extra_args=[tid], timeout_secs=120)
+                        except RuntimeError:
+                            continue  # timeout = failure, expected
+                        if not report.get("failed"):
+                            failures.append(
+                                f"catching test no longer fails with bug back: {tid}"
+                            )
+                finally:
+                    git_restore(tgt)
+
+        elif status == "STILL EXPOSED":
+            if sha not in accepted_shas:
+                line_text = row.get("line", row.get("subject", ""))[:60]
+                failures.append(
+                    f"STILL EXPOSED row not in antibody-accepted.yaml: "
+                    f"{sha[:12]} ({line_text})"
+                )
+            else:
+                accepted_exposures += 1
+
+    if not checked:
+        failures.append("no rows were checked — nothing is verified")
+
+    total = len(rows)
+    summary = (
+        f"checked {checked} of {total}; "
+        f"{re_audit_count} need re-audit; "
+        f"{accepted_exposures} accepted exposures"
+    )
+
+    for w in warnings_list:
+        print(f"WARNING: {w}")
+
+    if failures:
+        for f_msg in failures:
+            print(f"FAIL: {f_msg}")
+        print(summary)
+        sys.exit(1)
+    else:
+        print("OK: all checks passed")
+        print(summary)
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -2040,6 +3112,15 @@ def main() -> None:
     p_prove.add_argument("sha", help="Commit SHA of the fix")
     p_prove.add_argument("test", help="Test file path or pytest node ID")
 
+    # ledger
+    p_ledger = sub.add_parser("ledger", help="Build ledger.json and static page")
+    p_ledger.add_argument("name", help="Target name")
+    p_ledger.add_argument("--publish", action="store_true", help="Copy to audits/ and site/")
+
+    # gate
+    p_gate = sub.add_parser("gate", help="CI gate: verify catching tests still work")
+    p_gate.add_argument("name", help="Target name")
+
     args = parser.parse_args()
 
     if args.command == "setup":
@@ -2052,6 +3133,10 @@ def main() -> None:
         cmd_probe(args)
     elif args.command == "prove":
         cmd_prove(args)
+    elif args.command == "ledger":
+        cmd_ledger(args)
+    elif args.command == "gate":
+        cmd_gate(args)
     else:
         parser.print_help()
         sys.exit(1)

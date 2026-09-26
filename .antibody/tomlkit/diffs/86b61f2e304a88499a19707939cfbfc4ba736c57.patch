@@ -1,0 +1,13 @@
+diff --git a/tomlkit/__init__.py b/tomlkit/__init__.py
+index ade3eea..fa7e0e3 100644
+--- a/tomlkit/__init__.py
++++ b/tomlkit/__init__.py
+@@ -25,7 +25,7 @@ from tomlkit.api import value
+ from tomlkit.api import ws
+ 
+ 
+-__version__ = "0.11.4"
++__version__ = "0.11.5"
+ __all__ = [
+     "aot",
+     "array",

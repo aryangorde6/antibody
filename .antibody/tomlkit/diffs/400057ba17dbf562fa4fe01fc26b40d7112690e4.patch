@@ -1,0 +1,62 @@
+diff --git a/tomlkit/exceptions.py b/tomlkit/exceptions.py
+index 49dae8f..8c7e6e7 100644
+--- a/tomlkit/exceptions.py
++++ b/tomlkit/exceptions.py
+@@ -225,3 +225,10 @@ class InvalidStringError(ValueError, TOMLKitError):
+             f"Invalid string: {delimiter}{repr_}{delimiter}. "
+             f"The character sequences {invalid_sequences} are invalid."
+         )
++
++
++class ConvertError(TypeError, ValueError, TOMLKitError):
++    """Raised when item() fails to convert a value.
++    It should be a TypeError, but due to historical reasons
++    it needs to subclass ValueError as well.
++    """
+diff --git a/tomlkit/items.py b/tomlkit/items.py
+index 661e09c..d02fca1 100644
+--- a/tomlkit/items.py
++++ b/tomlkit/items.py
+@@ -33,6 +33,7 @@ from tomlkit._types import _CustomList
+ from tomlkit._types import wrap_method
+ from tomlkit._utils import CONTROL_CHARS
+ from tomlkit._utils import escape_string
++from tomlkit.exceptions import ConvertError
+ from tomlkit.exceptions import InvalidStringError
+ 
+ 
+@@ -46,13 +47,6 @@ CUSTOM_ENCODERS: list[Encoder] = []
+ AT = TypeVar("AT", bound="AbstractTable")
+ 
+ 
+-class _ConvertError(TypeError, ValueError):
+-    """An internal error raised when item() fails to convert a value.
+-    It should be a TypeError, but due to historical reasons
+-    it needs to subclass ValueError as well.
+-    """
+-
+-
+ @overload
+ def item(value: bool, _parent: Item | None = ..., _sort_keys: bool = ...) -> Bool: ...
+ 
+@@ -206,16 +200,16 @@ def item(value: Any, _parent: Item | None = None, _sort_keys: bool = False) -> I
+         for encoder in CUSTOM_ENCODERS:
+             try:
+                 rv = encoder(value)
+-            except TypeError:
++            except ConvertError:
+                 pass
+             else:
+                 if not isinstance(rv, Item):
+-                    raise _ConvertError(
+-                        f"Custom encoder returned {type(rv)}, not a subclass of Item"
++                    raise ConvertError(
++                        f"Custom encoder is expected to return an instance of Item, got {type(rv)}"
+                     )
+                 return rv
+ 
+-    raise _ConvertError(f"Invalid type {type(value)}")
++    raise ConvertError(f"Unable to convert an object of {type(value)} to a TOML item")
+ 
+ 
+ class StringType(Enum):

@@ -1,0 +1,33 @@
+{
+  "verdict": "NOT PROVEN",
+  "step": "step 2 run 1: test still passes with bug back",
+  "runs_with_fix": [
+    {
+      "run": 1,
+      "collected": 1,
+      "failed": [],
+      "output": "============================= test session starts ==============================\nplatform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- /home/aryan/ibm_bob_hack/antibody/targets/.venvs/tomlkit/bin/python\nrootdir: /home/aryan/ibm_bob_hack/antibody/targets/tomlkit\nconfigfile: pyproject.toml\ncollecting ... collected 1 item\n\ntests/test_toml_document.py::test_set_default_int PASSED                 [100%]\n\n============================== 1 passed in 0.22s ===============================\n"
+    },
+    {
+      "run": 2,
+      "collected": 1,
+      "failed": [],
+      "output": "============================= test session starts ==============================\nplatform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- /home/aryan/ibm_bob_hack/antibody/targets/.venvs/tomlkit/bin/python\nrootdir: /home/aryan/ibm_bob_hack/antibody/targets/tomlkit\nconfigfile: pyproject.toml\ncollecting ... collected 1 item\n\ntests/test_toml_document.py::test_set_default_int PASSED                 [100%]\n\n============================== 1 passed in 0.23s ===============================\n"
+    },
+    {
+      "run": 3,
+      "collected": 1,
+      "failed": [],
+      "output": "============================= test session starts ==============================\nplatform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- /home/aryan/ibm_bob_hack/antibody/targets/.venvs/tomlkit/bin/python\nrootdir: /home/aryan/ibm_bob_hack/antibody/targets/tomlkit\nconfigfile: pyproject.toml\ncollecting ... collected 1 item\n\ntests/test_toml_document.py::test_set_default_int PASSED                 [100%]\n\n============================== 1 passed in 0.23s ===============================\n"
+    }
+  ],
+  "runs_without_fix": [
+    {
+      "run": 1,
+      "collected": 1,
+      "failed": [],
+      "output": "============================= test session starts ==============================\nplatform linux -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- /home/aryan/ibm_bob_hack/antibody/targets/.venvs/tomlkit/bin/python\nrootdir: /home/aryan/ibm_bob_hack/antibody/targets/tomlkit\nconfigfile: pyproject.toml\ncollecting ... collected 1 item\n\ntests/test_toml_document.py::test_set_default_int PASSED                 [100%]\n\n============================== 1 passed in 0.23s ===============================\n"
+    }
+  ],
+  "failure_messages": []
+}

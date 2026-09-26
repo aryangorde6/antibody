@@ -1,0 +1,40 @@
+diff --git a/tomlkit/items.py b/tomlkit/items.py
+index 184ffe7..26b8f9f 100644
+--- a/tomlkit/items.py
++++ b/tomlkit/items.py
+@@ -1018,6 +1018,8 @@ class Table(Item, dict):
+         return self._value[key]
+ 
+     def __setitem__(self, key, value):  # type: (Union[Key, str], Any) -> None
++        fix_indent = key not in self
++
+         if not isinstance(value, Item):
+             value = item(value)
+ 
+@@ -1027,7 +1029,7 @@ class Table(Item, dict):
+             super(Table, self).__setitem__(key, value)
+ 
+         m = re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent)
+-        if not m:
++        if not m or not fix_indent:
+             return
+ 
+         indent = m.group(1)
+diff --git a/tomlkit/parser.py b/tomlkit/parser.py
+index 4992995..7d3c834 100644
+--- a/tomlkit/parser.py
++++ b/tomlkit/parser.py
+@@ -1138,9 +1138,11 @@ class Parser:
+                         )
+ 
+                     if is_aot and i == len(name_parts[1:]) - 1:
+-                        table.append(_name, AoT([child], name=table.name, parsed=True))
++                        table.raw_append(
++                            _name, AoT([child], name=table.name, parsed=True)
++                        )
+                     else:
+-                        table.append(_name, child)
++                        table.raw_append(_name, child)
+ 
+                     table = child
+                     values = table.value

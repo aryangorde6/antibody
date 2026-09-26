@@ -1,0 +1,12 @@
+diff --git a/tomlkit/parser.py b/tomlkit/parser.py
+index 7d3c834..b702088 100644
+--- a/tomlkit/parser.py
++++ b/tomlkit/parser.py
+@@ -1203,6 +1203,7 @@ class Parser:
+         as well as whether it is part of an AoT.
+         """
+         # we always want to restore after exiting this scope
++        table_name = ""
+         with self._state(save_marker=True, restore=True):
+             if self._current != "[":
+                 raise self.parse_error(

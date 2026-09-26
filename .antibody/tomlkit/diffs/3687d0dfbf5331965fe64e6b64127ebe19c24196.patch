@@ -1,0 +1,16 @@
+diff --git a/tomlkit/api.py b/tomlkit/api.py
+index 439b437..fbcaf3c 100644
+--- a/tomlkit/api.py
++++ b/tomlkit/api.py
+@@ -117,9 +117,9 @@ def float_(raw: str | float) -> Float:
+     return item(float(raw))
+ 
+ 
+-def boolean(raw: str) -> Bool:
++def boolean(raw: str | bool) -> Bool:
+     """Turn `true` or `false` into a boolean item."""
+-    return item(raw == "true")
++    return item(raw == "true" if isinstance(raw, str) else raw)
+ 
+ 
+ def string(

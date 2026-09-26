@@ -52,6 +52,8 @@ class AntibodyPlugin:
                 self.failed.append(report.nodeid)
 
         # Fix 2: record skipped / xfailed / xpassed counts.
+        # An xfailed test is reported as both skipped=True (when="call") and
+        # wasxfail is set; we must count it only as xfailed, not also as skipped.
         if report.when == "call":
             wasxfail = getattr(report, "wasxfail", None)
             if wasxfail is not None:
@@ -61,6 +63,8 @@ class AntibodyPlugin:
                 else:
                     # xfailed: marked xfail and failed as expected
                     self.xfailed += 1
+                # Do NOT also increment skipped — xfailed is not a skip.
+                return
         if report.skipped:
             # skipped can happen in setup or call (e.g. pytest.skip in fixture)
             # only count once per phase; "call" skips are pytest.skip() in the body,

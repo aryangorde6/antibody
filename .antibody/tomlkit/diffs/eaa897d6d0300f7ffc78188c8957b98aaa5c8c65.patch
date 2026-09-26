@@ -1,0 +1,311 @@
+diff --git a/tomlkit/parser.py b/tomlkit/parser.py
+index ddd759f..8845034 100644
+--- a/tomlkit/parser.py
++++ b/tomlkit/parser.py
+@@ -47,7 +47,6 @@ from tomlkit.items import Trivia
+ from tomlkit.items import Whitespace
+ from tomlkit.source import Source
+ from tomlkit.source import _StateHandler
+-from tomlkit.toml_char import TOMLChar
+ from tomlkit.toml_document import TOMLDocument
+ 
+ 
+@@ -57,11 +56,15 @@ CTRL_M = 0x0D  # Carriage return
+ CTRL_CHAR_LIMIT = 0x1F
+ CHR_DEL = 0x7F
+ 
+-# Character sets for Source.advance_while / advance_until bulk run scans
+-# (replace per-character `while self._current.is_*() and self.inc()` loops with
+-# a single underlying-string scan).
+-_SPACES_SET = frozenset(TOMLChar.SPACES)
+-_BARE_KEY_OR_SPACE = frozenset(TOMLChar.BARE + TOMLChar.SPACES)
++# TOML character classes (formerly the `TOMLChar` constants), as frozensets for
++# O(1) membership tests; also the stop-sets for the Source.advance_while /
++# advance_until bulk run scans that replace per-character
++# `while self._current in <set> and self.inc()` loops with a single scan.
++_SPACES = frozenset(" \t")
++_NL = frozenset("\n\r")
++_WS = _SPACES | _NL
++_KV = frozenset("= \t")
++_BARE_KEY_OR_SPACE = frozenset(string.ascii_letters + string.digits + "-_ \t")
+ _NUM_STOP = frozenset(" \t\n\r#,]}")
+ _DATE_TAIL_STOP = frozenset("\t\n\r#,]}")
+ # Control chars invalid inside a single-line string (DEL + everything <= 0x1F
+@@ -94,7 +97,7 @@ class Parser:
+         return self._src.idx
+ 
+     @property
+-    def _current(self) -> TOMLChar:
++    def _current(self) -> str:
+         return self._src.current
+ 
+     @property
+@@ -292,7 +295,7 @@ class Parser:
+                 self.inc()  # Skip #
+ 
+                 # The comment itself
+-                while not self.end() and not self._current.is_nl():
++                while not self.end() and self._current not in _NL:
+                     code = ord(self._current)
+                     if code == CHR_DEL or (code <= CTRL_CHAR_LIMIT and code != CTRL_I):
+                         raise self.parse_error(InvalidControlChar, code, "comments")
+@@ -320,7 +323,7 @@ class Parser:
+ 
+         trail = ""
+         if parse_trail:
+-            self._src.advance_while(_SPACES_SET)
++            self._src.advance_while(_SPACES)
+ 
+             if self._current == "\r":
+                 with self._state(restore=True):
+@@ -331,7 +334,7 @@ class Parser:
+             if self._current == "\n":
+                 self.inc()
+ 
+-            if self._idx != self._marker or self._current.is_ws():
++            if self._idx != self._marker or self._current in _WS:
+                 trail = self.extract()
+ 
+         return comment_ws, comment, trail
+@@ -340,7 +343,7 @@ class Parser:
+         # Leading indent
+         self.mark()
+ 
+-        self._src.advance_while(_SPACES_SET)
++        self._src.advance_while(_SPACES)
+ 
+         indent = self.extract()
+ 
+@@ -350,7 +353,7 @@ class Parser:
+         self.mark()
+ 
+         found_equals = self._current == "="
+-        while self._current.is_kv_sep() and self.inc():
++        while self._current in _KV and self.inc():
+             if self._current == "=":
+                 if found_equals:
+                     raise self.parse_error(UnexpectedCharError, "=")
+@@ -389,7 +392,7 @@ class Parser:
+         """
+         self.mark()
+         # Skip any leading whitespace (bulk scan)
+-        self._src.advance_while(_SPACES_SET)
++        self._src.advance_while(_SPACES)
+         if self._current in "\"'":
+             return self._parse_quoted_key()
+         else:
+@@ -414,7 +417,7 @@ class Parser:
+             raise self.parse_error(UnexpectedCharError, key_str._t.value)
+         original += key_str.as_string()
+         self.mark()
+-        self._src.advance_while(_SPACES_SET)
++        self._src.advance_while(_SPACES)
+         original += self.extract()
+         result: Key = SingleKey(str(key_str), t=key_type, sep="", original=original)
+         if self._current == ".":
+@@ -594,9 +597,9 @@ class Parser:
+         while True:
+             # consume whitespace
+             mark = self._idx
+-            self.consume(TOMLChar.SPACES + TOMLChar.NL)
++            self.consume(" \t\n\r")
+             indent = self._src[mark : self._idx]
+-            newline = set(TOMLChar.NL) & set(indent)
++            newline = _NL & set(indent)
+             if newline:
+                 elems.append(Whitespace(indent))
+                 continue
+@@ -659,7 +662,7 @@ class Parser:
+             while True:
+                 # consume whitespace and newlines
+                 mark = self._idx
+-                self.consume(TOMLChar.SPACES + TOMLChar.NL)
++                self.consume(" \t\n\r")
+                 raw = self._src[mark : self._idx]
+                 if raw:
+                     elems.add(Whitespace(raw))
+@@ -749,7 +752,7 @@ class Parser:
+             return self._parse_string(StringType.SLB)
+ 
+     def _parse_escaped_char(self, multiline: bool) -> str:
+-        if multiline and self._current.is_ws():
++        if multiline and self._current in _WS:
+             # When the last non-whitespace character on a line is
+             # a \, it will be trimmed along with all whitespace
+             # (including newlines) up to the next non-whitespace
+@@ -758,7 +761,7 @@ class Parser:
+             #     hello \
+             #     world"""
+             tmp = ""
+-            while self._current.is_ws():
++            while self._current in _WS:
+                 tmp += self._current
+                 # consume the whitespace, EOF here is an issue
+                 # (middle of string)
+@@ -847,7 +850,6 @@ class Parser:
+         # PERF: stop-set for the single-line string-body bulk fast-path (None for
+         # multiline, which keeps the per-char loop because of \r\n handling).
+         src = self._src
+-        EOF = src.EOF
+         single_stop = None
+         if delim.is_singleline():
+             single_stop = (
+@@ -938,7 +940,7 @@ class Parser:
+                     # loop for CRLF handling).
+                     run_start = src._idx
+                     src.advance_until(single_stop)
+-                    if src._current is EOF:
++                    if src.end():
+                         # mid-string EOF — same error as the per-char inc()
+                         raise self.parse_error(UnexpectedEofError)
+                     value += src[run_start : src._idx]
+diff --git a/tomlkit/source.py b/tomlkit/source.py
+index fa9819f..b2e9caa 100644
+--- a/tomlkit/source.py
++++ b/tomlkit/source.py
+@@ -4,7 +4,6 @@ from typing import Any
+ 
+ from tomlkit.exceptions import ParseError
+ from tomlkit.exceptions import UnexpectedCharError
+-from tomlkit.toml_char import TOMLChar
+ 
+ 
+ class _State:
+@@ -75,19 +74,20 @@ class _StateHandler:
+ 
+ 
+ class Source(str):
+-    EOF = TOMLChar("\0")
++    # EOF is a placeholder value for `current` past the end of input. End-of-input
++    # is detected positionally (`end()` / `_idx >= len`), never by comparing to this
++    # value, so a real NUL byte in the input is not mistaken for EOF.
++    EOF = "\0"
+ 
+     def __init__(self, _: str) -> None:
+         super().__init__()
+ 
+-        # PERF: previously built `iter([(i, TOMLChar(c)) for i, c in enumerate(self)])`
+-        # which materialized N tuples + N TOMLChars at init time (~584 k allocations
+-        # per 150-parse benchmark). Switching to an integer index over the underlying
+-        # str makes init O(1) and lets `inc()` just bump the index and slice the str.
+-        # The TOMLChar cache (toml_char.py) absorbs the per-character cost.
++        # Track an integer index over the underlying str (Source subclasses str):
++        # init is O(1) and `inc()` just bumps the index and reads the next char,
++        # instead of materializing a list of (index, char) pairs up front.
+         self._idx = -1  # pre-start sentinel; first inc() will land on 0
+         self._marker = 0
+-        self._current: TOMLChar = TOMLChar("")
++        self._current: str = ""
+ 
+         self._state = _StateHandler(self)
+ 
+@@ -109,7 +109,7 @@ class Source(str):
+         return self._idx
+ 
+     @property
+-    def current(self) -> TOMLChar:
++    def current(self) -> str:
+         return self._current
+ 
+     @property
+@@ -127,13 +127,11 @@ class Source(str):
+         Increments the parser if the end of the input has not been reached.
+         Returns whether or not it was able to advance.
+         """
+-        # PERF: integer increment + cached TOMLChar lookup, no iterator/next()/
+-        # StopIteration triage. After the first char of each kind has been seen,
+-        # `TOMLChar(self[i])` is a dict.get cache hit.
++        # Integer increment + a single str index, no iterator / StopIteration triage.
+         next_idx = self._idx + 1
+         if next_idx < len(self):
+             self._idx = next_idx
+-            self._current = TOMLChar(self[next_idx])
++            self._current = self[next_idx]
+             return True
+ 
+         # Past end : pin to len, switch current to EOF, raise if asked.
+@@ -159,7 +157,7 @@ class Source(str):
+             i += 1
+         if i < n:
+             self._idx = i
+-            self._current = TOMLChar(self[i])
++            self._current = self[i]
+             return True
+         self._idx = n
+         self._current = self.EOF
+@@ -179,7 +177,7 @@ class Source(str):
+             i += 1
+         if i < n:
+             self._idx = i
+-            self._current = TOMLChar(self[i])
++            self._current = self[i]
+             return True
+         self._idx = n
+         self._current = self.EOF
+@@ -210,7 +208,7 @@ class Source(str):
+         """
+         Returns True if the parser has reached the end of the input.
+         """
+-        return self._current is self.EOF
++        return self._idx >= len(self)
+ 
+     def mark(self) -> None:
+         """
+diff --git a/tomlkit/toml_char.py b/tomlkit/toml_char.py
+deleted file mode 100644
+index 970cbd4..0000000
+--- a/tomlkit/toml_char.py
++++ /dev/null
+@@ -1,52 +0,0 @@
+-import string
+-
+-
+-class TOMLChar(str):
+-    def __init__(self, c: str) -> None:
+-        super().__init__()
+-
+-        if len(self) > 1:
+-            raise ValueError("A TOML character must be of length 1")
+-
+-    BARE = string.ascii_letters + string.digits + "-_"
+-    KV = "= \t"
+-    NUMBER = string.digits + "+-_.e"
+-    SPACES = " \t"
+-    NL = "\n\r"
+-    WS = SPACES + NL
+-
+-    def is_bare_key_char(self) -> bool:
+-        """
+-        Whether the character is a valid bare key name or not.
+-        """
+-        return self in self.BARE
+-
+-    def is_kv_sep(self) -> bool:
+-        """
+-        Whether the character is a valid key/value separator or not.
+-        """
+-        return self in self.KV
+-
+-    def is_int_float_char(self) -> bool:
+-        """
+-        Whether the character if a valid integer or float value character or not.
+-        """
+-        return self in self.NUMBER
+-
+-    def is_ws(self) -> bool:
+-        """
+-        Whether the character is a whitespace character or not.
+-        """
+-        return self in self.WS
+-
+-    def is_nl(self) -> bool:
+-        """
+-        Whether the character is a new line character or not.
+-        """
+-        return self in self.NL
+-
+-    def is_spaces(self) -> bool:
+-        """
+-        Whether the character is a space or not
+-        """
+-        return self in self.SPACES

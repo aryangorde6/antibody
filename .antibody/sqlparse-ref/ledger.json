@@ -1,0 +1,506 @@
+{
+  "name": "sqlparse-ref",
+  "repo": "https://github.com/andialbrecht/sqlparse",
+  "head": "60cdc649726bf1bc4f1b336050560b336da715ec",
+  "run_time": "2026-09-26T07:41:13+00:00",
+  "ledger_time": "2026-09-26T08:36:14+00:00",
+  "curated": null,
+  "stats": {
+    "total_candidates": 45,
+    "checkable": 21,
+    "caught_before": 14,
+    "caught_after": 14
+  },
+  "rows": [
+    {
+      "sha": "a51df6d9e2d31b44be9adb6bc8732517db6bf96b",
+      "status": "STILL EXPOSED",
+      "line": "Measure reindent offsets backwards to avoid quadratic CPU use",
+      "reason": "no test catches it",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "d1d80602741f77ec78e5a04ce4719244cf32352e",
+      "status": "NO DATA",
+      "line": "Fix uncontrolled CPU consumption (ReDoS) in the lexer's handling of dollar-quoted literals and multiline comments.",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "ef2012a5eeb491e604dea2b00d516904a3830c87",
+      "status": "STILL EXPOSED",
+      "line": "Fix quadratic DoS in group_comments (GHSA-f2ff-p2ww-7p4p)",
+      "reason": "no test catches it",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "a194d3187b04b0aed7a935c3401f068236fb6264",
+      "status": "CAUGHT",
+      "line": "Keep keyword before leading-dot float literal (issue601)",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_regressions.py::test_between_leading_dot_float_issue601[a BETWEEN .03 AND .06]",
+        "tests/test_regressions.py::test_between_leading_dot_float_issue601[a between .03 and .06]"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "f66d12c245412f28c58f045b646eb53c0e691b8b",
+      "status": "CAUGHT",
+      "line": "Fix get_real_name for names with more than two dotted parts (#332)",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_parse.py::test_get_real_name_multi_part_dotted"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "ac3b9e0b25627feb42a7053074b6549df81dcfaf",
+      "status": "CAUGHT",
+      "line": "Recognize MATERIALIZED as a keyword (issue752)",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_regressions.py::test_materialized_view_issue752"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "111b35cffcfe44b16fbdd27507f165bafd52a2a1",
+      "status": "CAUGHT",
+      "line": "Fix function grouping skipped for lowercase 'as' in CREATE TABLE AS SELECT",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_grouping.py::test_grouping_alias_ctas_lowercase_as"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "26d7d652218757828b64cfe7914660d529ab21e3",
+      "status": "CAUGHT",
+      "line": "Recognize ROW_FORMAT as a keyword (issue773)",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_regressions.py::test_alter_table_row_format_issue773"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "8f978caa7cc777d845d358bfc82ea30110395d32",
+      "status": "NO DATA",
+      "line": "Refactor statement splitter to a simplified stack-based architecture (fixes #845)",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "da67ac16b8fa2c5041458bee728c8a914bed2d37",
+      "status": "NO DATA",
+      "line": "Enhance DoS protection by raising SQLParseError for exceeded grouping limits (fixes #827).",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "5ca50a2ee9b39e9efeea33e01f132d628144fb69",
+      "status": "NO DATA",
+      "line": "Fix splitting of BEGIN TRANSACTION statements (fixes #826).",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "1a3bfbd50b82c05d9adcc51bacba059671dc1bc7",
+      "status": "NO DATA",
+      "line": "Fix handling of semicolons inside BEGIN...END blocks (fixes #809).",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "e92a032c81d51a6645b4f8c32470481894818ba0",
+      "status": "NO DATA",
+      "line": "Fix handling of IF EXISTS statements in BEGIN...END blocks (fixes #812).",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "73c8ba3ae88b608d39740c0776fb15064232258e",
+      "status": "CAUGHT",
+      "line": "bugfix ISSUE_801; Remove all comments when only comments",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_format.py::TestFormat::test_strip_comments_single"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "31903e09db518ee3969110073427196ef9cd46c3",
+      "status": "CAUGHT",
+      "line": "Add pre-commit hook support (fixes #537)",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_cli.py::test_cli_multiple_files_with_inplace",
+        "tests/test_cli.py::test_cli_multiple_files_without_inplace_fails",
+        "tests/test_cli.py::test_cli_inplace_with_stdin_fails",
+        "tests/test_cli.py::test_cli_outfile_with_multiple_files_fails",
+        "tests/test_cli.py::test_cli_single_file_inplace",
+        "tests/test_cli.py::test_cli_error_handling_continues"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "f1d2d688bc542ee2645f8ecdf8f7bd9488a96136",
+      "status": "EXCLUDED",
+      "line": "Add type annotations to public API functions",
+      "reason": "non-behavioural: Source changes are identical after stripping non-behavioural elements",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "694747fdbed387e05ba6904ed89183a42bb7c843",
+      "status": "STILL EXPOSED",
+      "line": "fix: Add `ATTACH`, `DETACH` to PostgreSQL keywords.",
+      "reason": "no test catches it",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "274310956473601f53f8d0b7e9024f364b5f04b6",
+      "status": "EXCLUDED",
+      "line": "Fixed 'trailing' typo in split method documentation",
+      "reason": "non-behavioural: Source changes are identical after stripping non-behavioural elements",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "8eb778ca73c4b297b9319488835df295ef815e7e",
+      "status": "EXCLUDED",
+      "line": "[fix] issue262 adding comment and tests",
+      "reason": "non-behavioural: Source changes are identical after stripping non-behavioural elements",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "af6df6c6627b5fcf98bc7bb46f780e1fa0d1a7ef",
+      "status": "NO DATA",
+      "line": "[fix] fixing SQL-Hint deleting when clearing script from comments",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "e48000a5d76ff4d762821708f99ca90962e25f46",
+      "status": "STILL EXPOSED",
+      "line": "Add EXTENSION as keyword (fixes #785).",
+      "reason": "no test catches it",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "b126ba5b2004474e9ad899456c077f976b761319",
+      "status": "NO DATA",
+      "line": "Fix tokenization of order keywords (fixes #532).",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "0c4902f3f7aafa8c2e63a375ec307c210842f543",
+      "status": "CAUGHT",
+      "line": "Descend into subgroups when removing whitespace (fixes #782).",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_format.py::test_strip_ws_removes_trailing_ws_in_groups"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "791e25de46f443597d99314cfd1a68217bcaf970",
+      "status": "NO DATA",
+      "line": "Fix error when splitting statements that contain multiple CASE clauses within a BEGIN block (fixes #784).",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "bf74d8bc2c572b978997f7785747ad262025566c",
+      "status": "NO DATA",
+      "line": "Add compact option to force a more compact formatting (fixes #783).",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "8b0342730b2e53dcc7887e5b4563d479444ec0ba",
+      "status": "NO DATA",
+      "line": "Fix grouping of comments (fixes #772).",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "e03b74e608b71dd06824c2cb42421c0d790248e3",
+      "status": "CAUGHT",
+      "line": "Fix Function.get_parameters(), add Funtion.get_window()",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_grouping.py::test_grouping_function"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "617b8f6cd3c55bacf2c80130901508518753f7e1",
+      "status": "NO DATA",
+      "line": "Add OVER clause, and group it into Function (fixes #701)",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "46971e5a804b29e7dbd437155a8ceffab8ef1cd5",
+      "status": "CAUGHT",
+      "line": "Fix parsing of PRIMARY KEY (fixes #740).",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_regressions.py::test_primary_key_issue740"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "d76e8a4425d82a6cd704b5e549a8cabefa931341",
+      "status": "STILL EXPOSED",
+      "line": "Identify TRUNCATE as DDL, REVOKE/GRANT as DCL keywords.",
+      "reason": "no test catches it",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "8c24779e027e92a1ed379fc271e20f540b0f3d20",
+      "status": "STILL EXPOSED",
+      "line": "Improve formatting of statements with JSON operators (fixes #542).",
+      "reason": "no test catches it",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "6b05583f119224a43f8047159120edd0228ebd76",
+      "status": "CAUGHT",
+      "line": "Add support for some of the JSON operators (fixes #682).",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_format.py::test_format_json_ops",
+        "tests/test_parse.py::test_json_operators[->]",
+        "tests/test_parse.py::test_json_operators[->>]",
+        "tests/test_parse.py::test_json_operators[#>]",
+        "tests/test_parse.py::test_json_operators[#>>]",
+        "tests/test_parse.py::test_json_operators[@>]",
+        "tests/test_parse.py::test_json_operators[<@]"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "5bb129d3fc8a4d031bd37fab8e5ee24a199a9b8c",
+      "status": "NO DATA",
+      "line": "Thread-safe initialization of Lexer class (fixes #730).",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "7334ac99152d02bb09ab0abe79377174c2867f7c",
+      "status": "NO DATA",
+      "line": "Improve splitting of Transact SQL when using GO keyword (fixes #762).",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "39b5a02551de051b1e888135fe71759d5b49a134",
+      "status": "CAUGHT",
+      "line": "Ensure nested ordered identifiers are grouped (fixes #745)",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_grouping.py::test_grouping_nested_identifier_with_order"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "fac38cd03bea712e096222f16199a7482a4837da",
+      "status": "CAUGHT",
+      "line": "Ignore attributes starting with dunder in _TokenType (fixes #672).",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_regressions.py::test_copy_issue672"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "fc76056fb8f0ec713a3f2a2b6206a3336932c382",
+      "status": "NO DATA",
+      "line": "Cleanup regex for detecting keywords (fixes #709).",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "dd9d5b91d7aa30e4a000d5370f09dc99378891dc",
+      "status": "CAUGHT",
+      "line": "Fix get_type with comments between WITH keyword",
+      "reason": "",
+      "link": "",
+      "catching_tests": [
+        "tests/test_regressions.py::test_comment_between_cte_clauses_issue632"
+      ],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "8b789f286e1b6cbf05c15020ea7544cb7f02f8f7",
+      "status": "NO DATA",
+      "line": "Switch to pyproject.toml (fixes #685).",
+      "reason": "no-change: Reverse patch applied but changed nothing",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "e9241945801808d1db7f76bdccbbe9a200042c37",
+      "status": "NO DATA",
+      "line": "Revert \"add regex pattern to identify IN as a Compasion token\"",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "b72a8ff42f53cba0517b1dd9e8af051b4a060ecf",
+      "status": "NO DATA",
+      "line": "Allow any unicode character as identifier name (fixes #641).",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "403de6fc648ac4e012b60b49161c3f5f36dc944a",
+      "status": "NO DATA",
+      "line": "Fixed bad parsing of create table statements that use lower case",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "0bbfd5f8326fd4291c390858ba8ff482ff5ced70",
+      "status": "NO DATA",
+      "line": "Add DISTINCTROW keyword (fixes #677).",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "e58781dd632584c783ef082257309ea5efdb6750",
+      "status": "STILL EXPOSED",
+      "line": "Fix INDICATOR keyword",
+      "reason": "no test catches it",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    },
+    {
+      "sha": "e66046785b816e5c2d22f101f36faefd19c4a771",
+      "status": "NO DATA",
+      "line": "Fix parsing of scientific numbers (fixes #399).",
+      "reason": "code-moved: git apply -R failed",
+      "link": "",
+      "catching_tests": [],
+      "proof_code": null,
+      "probe_output": null
+    }
+  ]
+}

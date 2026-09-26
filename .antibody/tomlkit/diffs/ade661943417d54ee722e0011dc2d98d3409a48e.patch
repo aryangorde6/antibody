@@ -1,0 +1,108 @@
+diff --git a/tomlkit/items.py b/tomlkit/items.py
+index 0204d7d..91ac812 100644
+--- a/tomlkit/items.py
++++ b/tomlkit/items.py
+@@ -258,13 +258,6 @@ class StringType(Enum):
+     # Multi Line Literal
+     MLL = "'''"
+ 
+-    def __init__(self, value):
+-        self.is_basic = lru_cache(maxsize=None)(self._is_basic)
+-        self.is_literal = lru_cache(maxsize=None)(self._is_literal)
+-        self.is_singleline = lru_cache(maxsize=None)(self._is_singleline)
+-        self.is_multiline = lru_cache(maxsize=None)(self._is_multiline)
+-        self.toggle = lru_cache(maxsize=None)(self._toggle)
+-
+     @classmethod
+     def select(cls, literal=False, multiline=False) -> "StringType":
+         return {
+@@ -302,19 +295,19 @@ class StringType(Enum):
+     def unit(self) -> str:
+         return self.value[0]
+ 
+-    def _is_basic(self) -> bool:
++    def is_basic(self) -> bool:
+         return self in {StringType.SLB, StringType.MLB}
+ 
+-    def _is_literal(self) -> bool:
++    def is_literal(self) -> bool:
+         return self in {StringType.SLL, StringType.MLL}
+ 
+-    def _is_singleline(self) -> bool:
++    def is_singleline(self) -> bool:
+         return self in {StringType.SLB, StringType.SLL}
+ 
+-    def _is_multiline(self) -> bool:
++    def is_multiline(self) -> bool:
+         return self in {StringType.MLB, StringType.MLL}
+ 
+-    def _toggle(self) -> "StringType":
++    def toggle(self) -> "StringType":
+         return {
+             StringType.SLB: StringType.MLB,
+             StringType.MLB: StringType.SLB,
+diff --git a/tomlkit/toml_char.py b/tomlkit/toml_char.py
+index b6260e9..b4bb411 100644
+--- a/tomlkit/toml_char.py
++++ b/tomlkit/toml_char.py
+@@ -1,16 +1,8 @@
+ import string
+ 
+-from functools import lru_cache
+-
+ 
+ class TOMLChar(str):
+     def __init__(self, c):
+-        self.is_bare_key_char = lru_cache(maxsize=None)(self._is_bare_key_char)
+-        self.is_kv_sep = lru_cache(maxsize=None)(self._is_kv_sep)
+-        self.is_int_float_char = lru_cache(maxsize=None)(self._is_int_float_char)
+-        self.is_ws = lru_cache(maxsize=None)(self._is_ws)
+-        self.is_nl = lru_cache(maxsize=None)(self._is_nl)
+-        self.is_spaces = lru_cache(maxsize=None)(self._is_spaces)
+         super().__init__()
+ 
+         if len(self) > 1:
+@@ -23,37 +15,37 @@ class TOMLChar(str):
+     NL = "\n\r"
+     WS = SPACES + NL
+ 
+-    def _is_bare_key_char(self) -> bool:
++    def is_bare_key_char(self) -> bool:
+         """
+         Whether the character is a valid bare key name or not.
+         """
+         return self in self.BARE
+ 
+-    def _is_kv_sep(self) -> bool:
++    def is_kv_sep(self) -> bool:
+         """
+         Whether the character is a valid key/value separator or not.
+         """
+         return self in self.KV
+ 
+-    def _is_int_float_char(self) -> bool:
++    def is_int_float_char(self) -> bool:
+         """
+         Whether the character if a valid integer or float value character or not.
+         """
+         return self in self.NUMBER
+ 
+-    def _is_ws(self) -> bool:
++    def is_ws(self) -> bool:
+         """
+         Whether the character is a whitespace character or not.
+         """
+         return self in self.WS
+ 
+-    def _is_nl(self) -> bool:
++    def is_nl(self) -> bool:
+         """
+         Whether the character is a new line character or not.
+         """
+         return self in self.NL
+ 
+-    def _is_spaces(self) -> bool:
++    def is_spaces(self) -> bool:
+         """
+         Whether the character is a space or not
+         """

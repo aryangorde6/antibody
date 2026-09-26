@@ -1,0 +1,72 @@
+diff --git a/tomlkit/api.py b/tomlkit/api.py
+index 49573b5..ed48ca9 100644
+--- a/tomlkit/api.py
++++ b/tomlkit/api.py
+@@ -3,6 +3,7 @@ import datetime as _datetime
+ from collections.abc import Mapping
+ from typing import IO
+ from typing import Iterable
++from typing import Optional
+ from typing import Tuple
+ from typing import Union
+ 
+@@ -174,7 +175,7 @@ def array(raw: str = None) -> Array:
+     return value(raw)
+ 
+ 
+-def table(is_super_table: bool = False) -> Table:
++def table(is_super_table: Optional[bool] = None) -> Table:
+     """Create an empty table.
+ 
+     :param is_super_table: if true, the table is a super table
+diff --git a/tomlkit/items.py b/tomlkit/items.py
+index 59addb9..77fa27d 100644
+--- a/tomlkit/items.py
++++ b/tomlkit/items.py
+@@ -179,10 +179,6 @@ def item(
+             key=lambda i: (isinstance(i[1], dict), i[0] if _sort_keys else 1),
+         ):
+             val[k] = item(v, _parent=val, _sort_keys=_sort_keys)
+-        only_child = val[next(iter(value))] if len(value) == 1 else None
+-        if table_constructor is Table and isinstance(only_child, (AoT, Table)):
+-            # The table becomes super table if the only child is a table or AoT.
+-            val._is_super_table = True
+ 
+         return val
+     elif isinstance(value, (list, tuple)):
+@@ -1553,7 +1549,7 @@ class Table(AbstractTable):
+         value: "container.Container",
+         trivia: Trivia,
+         is_aot_element: bool,
+-        is_super_table: bool = False,
++        is_super_table: Optional[bool] = None,
+         name: Optional[str] = None,
+         display_name: Optional[str] = None,
+     ) -> None:
+@@ -1632,7 +1628,13 @@ class Table(AbstractTable):
+     def is_super_table(self) -> bool:
+         """A super table is the intermediate parent of a nested table as in [a.b.c].
+         If true, it won't appear in the TOML representation."""
+-        return self._is_super_table
++        if self._is_super_table is not None:
++            return self._is_super_table
++        # If the table has only one child and that child is a table, then it is a super table.
++        if len(self) != 1:
++            return False
++        only_child = next(iter(self.values()))
++        return isinstance(only_child, (Table, AoT))
+ 
+     def as_string(self) -> str:
+         return self._value.as_string()
+diff --git a/tomlkit/parser.py b/tomlkit/parser.py
+index d16bc9d..c6393a5 100644
+--- a/tomlkit/parser.py
++++ b/tomlkit/parser.py
+@@ -948,6 +948,7 @@ class Parser:
+             is_aot,
+             name=name_parts[0].key if name_parts else key.key,
+             display_name=full_key.as_string(),
++            is_super_table=False,
+         )
+ 
+         if len(name_parts) > 1:

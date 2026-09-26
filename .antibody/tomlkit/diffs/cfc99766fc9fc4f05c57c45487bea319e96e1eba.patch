@@ -1,0 +1,13 @@
+diff --git a/tomlkit/items.py b/tomlkit/items.py
+index f6346ac..31f63f8 100644
+--- a/tomlkit/items.py
++++ b/tomlkit/items.py
+@@ -1945,7 +1945,7 @@ class Null(Item):
+     """
+ 
+     def __init__(self) -> None:
+-        pass
++        super().__init__(Trivia(trail=""))
+ 
+     def unwrap(self) -> None:
+         return None

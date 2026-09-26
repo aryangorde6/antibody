@@ -1,0 +1,20 @@
+{
+  "repo": "https://github.com/python-poetry/tomlkit",
+  "head": "8c959b51c7da2734662af759a7c9f95e9a78060a",
+  "deps": [
+    "pytest",
+    "PyYAML"
+  ],
+  "install_commands": [
+    "uv pip install --python targets/.venvs/tomlkit/bin/python --quiet -e targets/tomlkit",
+    "uv pip install --python targets/.venvs/tomlkit/bin/python --quiet pytest PyYAML"
+  ],
+  "baseline": {
+    "collected": 1058,
+    "passed": 1058,
+    "skipped": 0,
+    "xfailed": 0,
+    "xpassed": 0,
+    "seconds": 2.84
+  }
+}

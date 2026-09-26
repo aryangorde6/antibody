@@ -1,0 +1,12 @@
+diff --git a/tomlkit/items.py b/tomlkit/items.py
+index c7396e5..1624c28 100644
+--- a/tomlkit/items.py
++++ b/tomlkit/items.py
+@@ -1412,6 +1412,7 @@ class Array(Item, _CustomList):
+                 if (
+                     idx == 0
+                     and len(self._value) > 0
++                    and self._value[idx].indent
+                     and "\n" not in self._value[idx].indent.s
+                 ):
+                     # Remove the indentation of the first item if not newline

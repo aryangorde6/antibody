@@ -1,0 +1,118 @@
+diff --git a/tomlkit/api.py b/tomlkit/api.py
+index 894c6ee..439b437 100644
+--- a/tomlkit/api.py
++++ b/tomlkit/api.py
+@@ -5,6 +5,7 @@ import datetime as _datetime
+ 
+ from collections.abc import Mapping
+ from typing import IO
++from typing import TYPE_CHECKING
+ from typing import Iterable
+ from typing import TypeVar
+ 
+@@ -19,7 +20,6 @@ from tomlkit.items import Comment
+ from tomlkit.items import Date
+ from tomlkit.items import DateTime
+ from tomlkit.items import DottedKey
+-from tomlkit.items import Encoder
+ from tomlkit.items import Float
+ from tomlkit.items import InlineTable
+ from tomlkit.items import Integer
+@@ -37,6 +37,12 @@ from tomlkit.parser import Parser
+ from tomlkit.toml_document import TOMLDocument
+ 
+ 
++if TYPE_CHECKING:
++    from tomlkit.items import Encoder
++
++    E = TypeVar("E", bound=Encoder)
++
++
+ def loads(string: str | bytes) -> TOMLDocument:
+     """
+     Parses a string into a TOMLDocument.
+@@ -294,13 +300,22 @@ def comment(string: str) -> Comment:
+     return Comment(Trivia(comment_ws="  ", comment="# " + string))
+ 
+ 
+-E = TypeVar("E", bound=Encoder)
+-
+-
+ def register_encoder(encoder: E) -> E:
+     """Add a custom encoder, which should be a function that will be called
+-    if the value can't otherwise be converted. It should takes a single value
+-    and return a TOMLKit item or raise a ``ConvertError``.
++    if the value can't otherwise be converted.
++
++    The encoder should return a TOMLKit item or raise a ``ConvertError``.
++
++    Example:
++        @register_encoder
++        def encode_custom_dict(obj, _parent=None, _sort_keys=False):
++            if isinstance(obj, CustomDict):
++                tbl = table()
++                for key, value in obj.items():
++                    # Pass along parameters when encoding nested values
++                    tbl[key] = item(value, _parent=tbl, _sort_keys=_sort_keys)
++                return tbl
++            raise ConvertError("Not a CustomDict")
+     """
+     CUSTOM_ENCODERS.append(encoder)
+     return encoder
+diff --git a/tomlkit/items.py b/tomlkit/items.py
+index 456dc83..d326d49 100644
+--- a/tomlkit/items.py
++++ b/tomlkit/items.py
+@@ -3,6 +3,7 @@ from __future__ import annotations
+ import abc
+ import copy
+ import dataclasses
++import inspect
+ import math
+ import re
+ import string
+@@ -15,7 +16,6 @@ from datetime import tzinfo
+ from enum import Enum
+ from typing import TYPE_CHECKING
+ from typing import Any
+-from typing import Callable
+ from typing import Collection
+ from typing import Iterable
+ from typing import Iterator
+@@ -38,11 +38,17 @@ from tomlkit.exceptions import InvalidStringError
+ 
+ 
+ if TYPE_CHECKING:
++    from typing import Protocol
++
+     from tomlkit import container
+ 
++    class Encoder(Protocol):
++        def __call__(
++            self, __value: Any, _parent: Item | None = None, _sort_keys: bool = False
++        ) -> Item: ...
++
+ 
+ ItemT = TypeVar("ItemT", bound="Item")
+-Encoder = Callable[[Any], "Item"]
+ CUSTOM_ENCODERS: list[Encoder] = []
+ AT = TypeVar("AT", bound="AbstractTable")
+ 
+@@ -199,7 +205,16 @@ def item(value: Any, _parent: Item | None = None, _sort_keys: bool = False) -> I
+     else:
+         for encoder in CUSTOM_ENCODERS:
+             try:
+-                rv = encoder(value)
++                # Check if encoder accepts keyword arguments for backward compatibility
++                sig = inspect.signature(encoder)
++                if "_parent" in sig.parameters or any(
++                    p.kind == p.VAR_KEYWORD for p in sig.parameters.values()
++                ):
++                    # New style encoder that can accept additional parameters
++                    rv = encoder(value, _parent=_parent, _sort_keys=_sort_keys)
++                else:
++                    # Old style encoder that only accepts value
++                    rv = encoder(value)
+             except ConvertError:
+                 pass
+             else:

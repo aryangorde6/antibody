@@ -1,0 +1,62 @@
+diff --git a/tomlkit/container.py b/tomlkit/container.py
+index 137333b..302127d 100644
+--- a/tomlkit/container.py
++++ b/tomlkit/container.py
+@@ -477,7 +477,7 @@ class Container(_CustomDict):
+         if not isinstance(key, Key):
+             key = SingleKey(key)
+ 
+-        idx = self._map.get(key, None)
++        idx = self._map.get(key)
+         if idx is None:
+             raise NonExistentKey(key)
+ 
+@@ -645,7 +645,7 @@ class Container(_CustomDict):
+         if not isinstance(key, Key):
+             key = SingleKey(key)
+ 
+-        idx = self._map.get(key, None)
++        idx = self._map.get(key)
+         if idx is None:
+             raise NonExistentKey(key)
+ 
+@@ -681,7 +681,7 @@ class Container(_CustomDict):
+         if not isinstance(key, Key):
+             key = SingleKey(key)
+ 
+-        idx = self._map.get(key, None)
++        idx = self._map.get(key)
+         if idx is None:
+             raise NonExistentKey(key)
+ 
+diff --git a/tomlkit/items.py b/tomlkit/items.py
+index da40880..d6a9224 100644
+--- a/tomlkit/items.py
++++ b/tomlkit/items.py
+@@ -1574,7 +1574,7 @@ class Table(AbstractTable):
+             self.display_name,
+         )
+ 
+-    def append(self, key, _item):
++    def append(self, key: Union[Key, str, None], _item: Any) -> "Table":
+         """
+         Appends a (key, item) to the table.
+         """
+@@ -1605,7 +1605,7 @@ class Table(AbstractTable):
+ 
+         return self
+ 
+-    def raw_append(self, key: Union[Key, str], _item: Any) -> "Table":
++    def raw_append(self, key: Union[Key, str, None], _item: Any) -> "Table":
+         """Similar to :meth:`append` but does not copy indentation."""
+         if not isinstance(_item, Item):
+             _item = item(_item)
+@@ -1691,7 +1691,7 @@ class InlineTable(AbstractTable):
+     def discriminant(self) -> int:
+         return 10
+ 
+-    def append(self, key, _item):
++    def append(self, key: Union[Key, str, None], _item: Any) -> "InlineTable":
+         """
+         Appends a (key, item) to the table.
+         """

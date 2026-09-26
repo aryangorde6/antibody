@@ -1,0 +1,156 @@
+diff --git a/tomlkit/parser.py b/tomlkit/parser.py
+index 341e3a9..81832ab 100644
+--- a/tomlkit/parser.py
++++ b/tomlkit/parser.py
+@@ -57,6 +57,14 @@ CTRL_M = 0x0D  # Carriage return
+ CTRL_CHAR_LIMIT = 0x1F
+ CHR_DEL = 0x7F
+ 
++# Character sets for Source.advance_while / advance_until bulk run scans
++# (replace per-character `while self._current.is_*() and self.inc()` loops with
++# a single underlying-string scan).
++_SPACES_SET = frozenset(TOMLChar.SPACES)
++_BARE_KEY_OR_SPACE = frozenset(TOMLChar.BARE + TOMLChar.SPACES)
++_NUM_STOP = frozenset(" \t\n\r#,]}")
++_DATE_TAIL_STOP = frozenset("\t\n\r#,]}")
++
+ 
+ class Parser:
+     """
+@@ -304,8 +312,7 @@ class Parser:
+ 
+         trail = ""
+         if parse_trail:
+-            while self._current.is_spaces() and self.inc():
+-                pass
++            self._src.advance_while(_SPACES_SET)
+ 
+             if self._current == "\r":
+                 with self._state(restore=True):
+@@ -325,8 +332,7 @@ class Parser:
+         # Leading indent
+         self.mark()
+ 
+-        while self._current.is_spaces() and self.inc():
+-            pass
++        self._src.advance_while(_SPACES_SET)
+ 
+         indent = self.extract()
+ 
+@@ -374,9 +380,8 @@ class Parser:
+         WS before the key must be exhausted first at the callsite.
+         """
+         self.mark()
+-        while self._current.is_spaces() and self.inc():
+-            # Skip any leading whitespace
+-            pass
++        # Skip any leading whitespace (bulk scan)
++        self._src.advance_while(_SPACES_SET)
+         if self._current in "\"'":
+             return self._parse_quoted_key()
+         else:
+@@ -401,8 +406,7 @@ class Parser:
+             raise self.parse_error(UnexpectedCharError, key_str._t.value)
+         original += key_str.as_string()
+         self.mark()
+-        while self._current.is_spaces() and self.inc():
+-            pass
++        self._src.advance_while(_SPACES_SET)
+         original += self.extract()
+         result: Key = SingleKey(str(key_str), t=key_type, sep="", original=original)
+         if self._current == ".":
+@@ -415,10 +419,7 @@ class Parser:
+         """
+         Parses a bare key.
+         """
+-        while (
+-            self._current.is_bare_key_char() or self._current.is_spaces()
+-        ) and self.inc():
+-            pass
++        self._src.advance_while(_BARE_KEY_OR_SPACE)
+ 
+         original = self.extract()
+         key_s = original.strip()
+@@ -467,8 +468,7 @@ class Parser:
+             "nan",
+         }:
+             # Number
+-            while self._current not in " \t\n\r#,]}" and self.inc():
+-                pass
++            self._src.advance_until(_NUM_STOP)
+ 
+             raw = self.extract()
+ 
+@@ -479,8 +479,7 @@ class Parser:
+             raise self.parse_error(InvalidNumberError)
+         elif c in string.digits:
+             # Integer, Float, Date, Time or DateTime
+-            while self._current not in " \t\n\r#,]}" and self.inc():
+-                pass
++            self._src.advance_until(_NUM_STOP)
+ 
+             raw = self.extract()
+ 
+@@ -512,8 +511,7 @@ class Parser:
+                         assert isinstance(dt, datetime.date)
+                         date = Date(dt.year, dt.month, dt.day, trivia, raw)
+                         self.mark()
+-                        while self._current not in "\t\n\r#,]}" and self.inc():
+-                            pass
++                        self._src.advance_until(_DATE_TAIL_STOP)
+ 
+                         time_raw = self.extract()
+                         time_part = time_raw.rstrip()
+diff --git a/tomlkit/source.py b/tomlkit/source.py
+index 79c4241..fa9819f 100644
+--- a/tomlkit/source.py
++++ b/tomlkit/source.py
+@@ -143,6 +143,48 @@ class Source(str):
+             raise self.parse_error(exception) from None
+         return False
+ 
++    def advance_while(self, charset: frozenset) -> bool:
++        """Advance while the current character is in ``charset``.
++
++        Equivalent to ``while self.current in charset and self.inc(): pass`` but
++        it scans the underlying string in a single pass and updates the index
++        and current character only once, instead of paying a per-character
++        ``inc()`` call. On return ``current`` is the first character NOT in
++        ``charset`` (or EOF). Returns ``True`` if it stopped on a real
++        character, ``False`` at EOF — the same value contract as the loop.
++        """
++        i = self._idx
++        n = len(self)
++        while i < n and self[i] in charset:
++            i += 1
++        if i < n:
++            self._idx = i
++            self._current = TOMLChar(self[i])
++            return True
++        self._idx = n
++        self._current = self.EOF
++        return False
++
++    def advance_until(self, stopset: frozenset) -> bool:
++        """Advance while the current character is NOT in ``stopset``.
++
++        The mirror of :meth:`advance_while`: equivalent to
++        ``while self.current not in stopset and self.inc(): pass`` in a single
++        scan. On return ``current`` is the first character IN ``stopset`` (or
++        EOF), with the same return-value contract.
++        """
++        i = self._idx
++        n = len(self)
++        while i < n and self[i] not in stopset:
++            i += 1
++        if i < n:
++            self._idx = i
++            self._current = TOMLChar(self[i])
++            return True
++        self._idx = n
++        self._current = self.EOF
++        return False
++
+     def inc_n(self, n: int, exception: type[ParseError] | None = None) -> bool:
+         """
+         Increments the parser by n characters

@@ -1,0 +1,26 @@
+diff --git a/tomlkit/container.py b/tomlkit/container.py
+index c3b85ad..4b40a13 100644
+--- a/tomlkit/container.py
++++ b/tomlkit/container.py
+@@ -194,7 +194,7 @@ class Container(_CustomDict):
+         prev = self._previous_item()
+         prev_ws = isinstance(prev, Whitespace) or ends_with_whitespace(prev)
+         if isinstance(item, Table):
+-            if item.name != key.key:
++            if not self._parsed:
+                 item.invalidate_display_name()
+             if self._body and not (self._parsed or item.trivia.indent or prev_ws):
+                 item.trivia.indent = "\n"
+diff --git a/tomlkit/items.py b/tomlkit/items.py
+index 695d7f7..59addb9 100644
+--- a/tomlkit/items.py
++++ b/tomlkit/items.py
+@@ -205,7 +205,7 @@ def item(
+                     v.items(),
+                     key=lambda i: (isinstance(i[1], dict), i[0] if _sort_keys else 1),
+                 ):
+-                    i = item(_v, _parent=a, _sort_keys=_sort_keys)
++                    i = item(_v, _parent=table, _sort_keys=_sort_keys)
+                     if isinstance(table, InlineTable):
+                         i.trivia.trail = ""
+ 

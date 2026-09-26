@@ -1,0 +1,13 @@
+diff --git a/tomlkit/__init__.py b/tomlkit/__init__.py
+index 7f3e374..b925bbf 100644
+--- a/tomlkit/__init__.py
++++ b/tomlkit/__init__.py
+@@ -27,7 +27,7 @@ from tomlkit.api import value
+ from tomlkit.api import ws
+ 
+ 
+-__version__ = "0.14.0"
++__version__ = "0.15.0"
+ __all__ = [
+     "TOMLDocument",
+     "aot",

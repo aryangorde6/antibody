@@ -1,0 +1,13 @@
+diff --git a/tomlkit/_utils.py b/tomlkit/_utils.py
+index 07ed7ba..85958e9 100644
+--- a/tomlkit/_utils.py
++++ b/tomlkit/_utils.py
+@@ -113,7 +113,7 @@ _compact_escapes = {
+     **{v: f"\\{k}" for k, v in _escaped.items()},
+     '"""': '""\\"',
+ }
+-_basic_escapes = CONTROL_CHARS | {'"'}
++_basic_escapes = CONTROL_CHARS | {'"', "\\"}
+ 
+ 
+ def _unicode_escape(seq: str) -> str:

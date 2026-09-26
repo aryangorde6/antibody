@@ -1,0 +1,67 @@
+name: Antibody gate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check audits/ is non-empty
+        run: |
+          if [ ! -d audits ] || [ -z "$(ls -A audits 2>/dev/null)" ]; then
+            echo "ERROR: audits/ is empty or missing — nothing checked is never a pass"
+            exit 1
+          fi
+
+      - name: Run gate for each audit
+        shell: bash
+        run: |
+          set -e
+          RUNNER=".bob/skills/recurrence-audit/scripts/antibody.py"
+
+          for audit_dir in audits/*/; do
+            name="$(basename "$audit_dir")"
+            echo "=== Gate: $name ==="
+
+            # Read setup parameters from .antibody/<name>/setup.json
+            setup_json=".antibody/${name}/setup.json"
+            if [ ! -f "$setup_json" ]; then
+              echo "ERROR: missing ${setup_json}"
+              exit 1
+            fi
+
+            git_url="$(python3.12 -c "import json,sys; d=json.load(open('${setup_json}')); print(d['repo'])")"
+            head_sha="$(python3.12 -c "import json,sys; d=json.load(open('${setup_json}')); print(d['head'])")"
+            deps_json="$(python3.12 -c "import json,sys; d=json.load(open('${setup_json}')); print(json.dumps(d.get('deps',[])))")"
+            deps_args="$(python3.12 -c "import json,sys; deps=json.loads(sys.argv[1]); print(' '.join(['--deps'] + deps) if deps else '')" "$deps_json")"
+
+            # Verify ledger HEAD matches setup HEAD
+            ledger_json=".antibody/${name}/ledger.json"
+            if [ -f "$ledger_json" ]; then
+              ledger_head="$(python3.12 -c "import json; d=json.load(open('${ledger_json}')); print(d.get('head',''))")"
+              if [ "$ledger_head" != "$head_sha" ]; then
+                echo "ERROR: ledger.json head ($ledger_head) differs from setup.json head ($head_sha) for ${name}"
+                exit 1
+              fi
+            fi
+
+            # Install uv (GitHub's Ubuntu image does not have it)
+            python3.12 -m pip install uv --quiet
+
+            # Set up the target
+            python3.12 "$RUNNER" setup "$name" "$git_url" --rev "$head_sha" $deps_args
+
+            # Copy proven tests from audits/<name>/ into targets/<name>/tests/antibody/
+            tests_ab_dir="targets/${name}/tests/antibody"
+            mkdir -p "$tests_ab_dir"
+            for f in "${audit_dir}"*.py; do
+              [ -f "$f" ] && cp "$f" "$tests_ab_dir/"
+            done
+
+            # Run gate
+            python3.12 "$RUNNER" gate "$name"
+          done

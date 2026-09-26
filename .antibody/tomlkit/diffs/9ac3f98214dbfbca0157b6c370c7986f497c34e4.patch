@@ -1,0 +1,60 @@
+diff --git a/tomlkit/container.py b/tomlkit/container.py
+index 43b160f..fefd76f 100644
+--- a/tomlkit/container.py
++++ b/tomlkit/container.py
+@@ -61,17 +61,20 @@ class Container(_CustomDict):  # type: ignore[type-arg]
+     def unwrap(self) -> dict[str, Any]:
+         """Returns as pure python object (ppo)"""
+         unwrapped: dict[str, Any] = {}
+-        for k, v in self.items():
+-            if k is None:
+-                continue
+-
+-            key_str: str = k.key if isinstance(k, Key) else k
+-            val: Any = v.unwrap() if hasattr(v, "unwrap") else v
+-
+-            if key_str in unwrapped:
+-                merge_dicts(unwrapped[key_str], val)
++        # Resolve each key straight from _map, which already holds the parsed
++        # Key objects and their body index, instead of via self.items(): the
++        # inherited MutableMapping iteration goes through __getitem__, which
++        # rebuilds a SingleKey from the bare string on every key only to throw
++        # it away. Out-of-order keys (a tuple index) still go through
++        # OutOfOrderTableProxy so their validation (and fragment merge) runs
++        # exactly as before. _map iterates in the same insertion order as the
++        # old self.items().
++        for key, idx in self._map.items():
++            if isinstance(idx, tuple):
++                value: Any = OutOfOrderTableProxy(self, idx)
+             else:
+-                unwrapped[key_str] = val
++                value = self._body[idx][1]
++            unwrapped[key.key] = value.unwrap() if hasattr(value, "unwrap") else value
+ 
+         return unwrapped
+ 
+diff --git a/tomlkit/items.py b/tomlkit/items.py
+index 8c33de1..6cbb29a 100644
+--- a/tomlkit/items.py
++++ b/tomlkit/items.py
+@@ -1747,15 +1747,11 @@ class AbstractTable(Item, _CustomDict):  # type: ignore[type-arg]
+                 dict.__setitem__(self, k.key, v)
+ 
+     def unwrap(self) -> dict[str, Any]:
+-        unwrapped = {}
+-        for k, v in self.items():
+-            if isinstance(k, Key):
+-                k = k.key
+-            if hasattr(v, "unwrap"):
+-                v = v.unwrap()
+-            unwrapped[k] = v
+-
+-        return unwrapped
++        # Delegate to the inner container's unwrap, which walks its _body
++        # directly instead of re-resolving every key through items()/__getitem__
++        # (which rebuilds a SingleKey, and an OutOfOrderTableProxy for
++        # out-of-order keys, per key just to throw it away).
++        return self._value.unwrap()
+ 
+     @property
+     def value(self) -> container.Container:

@@ -1,0 +1,13 @@
+diff --git a/tomlkit/source.py b/tomlkit/source.py
+index 06882c2..b8c77b5 100644
+--- a/tomlkit/source.py
++++ b/tomlkit/source.py
+@@ -147,7 +147,7 @@ class Source(str):
+ 
+         # failed to consume minimum number of characters
+         if min > 0:
+-            self.parse_error(UnexpectedCharError, self.current)
++            raise self.parse_error(UnexpectedCharError, self.current)
+ 
+     def end(self) -> bool:
+         """

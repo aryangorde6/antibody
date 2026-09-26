@@ -1,0 +1,138 @@
+diff --git a/tomlkit/__init__.py b/tomlkit/__init__.py
+index fbbab82..adb9781 100644
+--- a/tomlkit/__init__.py
++++ b/tomlkit/__init__.py
+@@ -29,6 +29,7 @@ from tomlkit.api import ws
+ 
+ __version__ = "0.13.2"
+ __all__ = [
++    "TOMLDocument",
+     "aot",
+     "array",
+     "boolean",
+@@ -48,12 +49,11 @@ __all__ = [
+     "loads",
+     "nl",
+     "parse",
++    "register_encoder",
+     "string",
+     "table",
+     "time",
+-    "TOMLDocument",
++    "unregister_encoder",
+     "value",
+     "ws",
+-    "register_encoder",
+-    "unregister_encoder",
+ ]
+diff --git a/tomlkit/items.py b/tomlkit/items.py
+index b46679b..c2ec6e4 100644
+--- a/tomlkit/items.py
++++ b/tomlkit/items.py
+@@ -1083,7 +1083,7 @@ class Time(Item, time):
+ 
+ 
+ class _ArrayItemGroup:
+-    __slots__ = ("value", "indent", "comma", "comment")
++    __slots__ = ("comma", "comment", "indent", "value")
+ 
+     def __init__(
+         self,
+@@ -1202,7 +1202,7 @@ class Array(Item, _CustomList):
+ 
+     def as_string(self) -> str:
+         if not self._multiline or not self._value:
+-            return f'[{"".join(v.as_string() for v in self._iter_items())}]'
++            return f"[{''.join(v.as_string() for v in self._iter_items())}]"
+ 
+         s = "[\n"
+         s += "".join(
+@@ -1260,7 +1260,7 @@ class Array(Item, _CustomList):
+         data_values = []
+         for i, el in enumerate(items):
+             it = item(el, _parent=self)
+-            if isinstance(it, Comment) or add_comma and isinstance(el, Whitespace):
++            if isinstance(it, Comment) or (add_comma and isinstance(el, Whitespace)):
+                 raise ValueError(f"item type {type(it)} is not allowed in add_line")
+             if not isinstance(it, Whitespace):
+                 if whitespace:
+@@ -1743,7 +1743,7 @@ class InlineTable(AbstractTable):
+             v_trivia_trail = v.trivia.trail.replace("\n", "")
+             buf += (
+                 f"{v.trivia.indent}"
+-                f'{k.as_string() + ("." if k.is_dotted() else "")}'
++                f"{k.as_string() + ('.' if k.is_dotted() else '')}"
+                 f"{k.sep}"
+                 f"{v.as_string()}"
+                 f"{v.trivia.comment}"
+diff --git a/tomlkit/parser.py b/tomlkit/parser.py
+index b73f277..77e73e7 100644
+--- a/tomlkit/parser.py
++++ b/tomlkit/parser.py
+@@ -264,7 +264,7 @@ class Parser:
+                 # The comment itself
+                 while not self.end() and not self._current.is_nl():
+                     code = ord(self._current)
+-                    if code == CHR_DEL or code <= CTRL_CHAR_LIMIT and code != CTRL_I:
++                    if code == CHR_DEL or (code <= CTRL_CHAR_LIMIT and code != CTRL_I):
+                         raise self.parse_error(InvalidControlChar, code, "comments")
+ 
+                     if not self.inc():
+@@ -636,10 +636,8 @@ class Parser:
+                     self.inc()
+                     break
+ 
+-                if (
+-                    trailing_comma is False
+-                    or trailing_comma is None
+-                    and self._current == ","
++                if trailing_comma is False or (
++                    trailing_comma is None and self._current == ","
+                 ):
+                     # Either the previous key-value pair was not followed by a comma
+                     # or the table has an unexpected leading comma.
+@@ -675,10 +673,8 @@ class Parser:
+             raw = raw[1:]
+ 
+         if len(raw) > 1 and (
+-            raw.startswith("0")
+-            and not raw.startswith(("0.", "0o", "0x", "0b", "0e"))
+-            or sign
+-            and raw.startswith(".")
++            (raw.startswith("0") and not raw.startswith(("0.", "0o", "0x", "0b", "0e")))
++            or (sign and raw.startswith("."))
+         ):
+             return None
+ 
+@@ -703,10 +699,8 @@ class Parser:
+         if "_" in clean:
+             return None
+ 
+-        if (
+-            clean.endswith(".")
+-            or not clean.startswith("0x")
+-            and clean.split("e", 1)[0].endswith(".")
++        if clean.endswith(".") or (
++            not clean.startswith("0x") and clean.split("e", 1)[0].endswith(".")
+         ):
+             return None
+ 
+@@ -817,14 +811,15 @@ class Parser:
+             if (
+                 delim.is_singleline()
+                 and not escaped
+-                and (code == CHR_DEL or code <= CTRL_CHAR_LIMIT and code != CTRL_I)
++                and (code == CHR_DEL or (code <= CTRL_CHAR_LIMIT and code != CTRL_I))
+             ) or (
+                 delim.is_multiline()
+                 and not escaped
+                 and (
+                     code == CHR_DEL
+-                    or code <= CTRL_CHAR_LIMIT
+-                    and code not in [CTRL_I, CTRL_J, CTRL_M]
++                    or (
++                        code <= CTRL_CHAR_LIMIT and code not in [CTRL_I, CTRL_J, CTRL_M]
++                    )
+                 )
+             ):
+                 raise self.parse_error(InvalidControlChar, code, "strings")

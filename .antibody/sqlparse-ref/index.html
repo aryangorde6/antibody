@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Antibody &#8212; sqlparse-ref</title>
+<style>
+:root {
+  --bg: #fff;
+  --surface: #f7f8fa;
+  --border: #e5e7eb;
+  --text: #1f2328;
+  --muted: #57606a;
+  --accent: #3b82d4;
+  --green: #1a7f37;
+  --red: #cf222e;
+  --orange: #9a6700;
+  --purple: #7c5cd8;
+  --font: -apple-system, "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --red: #f85149;
+    --orange: #d29922;
+    --purple: #bc8cff;
+  }
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  padding: 0 1rem 3rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+h1 { font-size: 1.3rem; font-weight: 700; margin: 1.5rem 0 0.25rem; }
+h2 { font-size: 1rem; font-weight: 600; margin: 1.2rem 0 0.5rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.question { font-size: 1.05rem; margin: 1.2rem 0 0.4rem; font-weight: 600; }
+.summary-line { font-size: 0.95rem; margin-bottom: 0.2rem; }
+.summary-note { font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; }
+.filters { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 1rem 0 0.5rem; align-items: center; }
+.filter-btn {
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.82rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.filter-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; }
+#search {
+  flex: 1 1 12rem;
+  min-width: 0;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.88rem; }
+th {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 2px solid var(--border);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+td { padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--border); vertical-align: top; word-break: break-word; }
+tr:last-child td { border-bottom: none; }
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge-caught { background: #dafbe1; color: var(--green); }
+.badge-now-caught { background: #dafbe1; color: var(--green); border: 1px solid var(--green); }
+.badge-exposed { background: #fff0f0; color: var(--red); }
+.badge-no-change { background: #fff8e1; color: var(--orange); }
+.badge-no-data { background: var(--surface); color: var(--muted); }
+.badge-not-a-bug { background: #f0f0ff; color: var(--purple); }
+.badge-excluded { background: var(--surface); color: var(--muted); }
+@media (prefers-color-scheme: dark) {
+  .badge-caught { background: #0f2a1a; }
+  .badge-now-caught { background: #0f2a1a; }
+  .badge-exposed { background: #2a0f0f; }
+  .badge-no-change { background: #2a1f00; }
+  .badge-not-a-bug { background: #1a1030; }
+}
+details summary { cursor: pointer; color: var(--accent); font-size: 0.82rem; user-select: none; }
+details summary:hover { text-decoration: underline; }
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.3rem;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.78rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin-top: 0.4rem;
+  max-height: 14rem;
+}
+.test-id { font-family: monospace; font-size: 0.8rem; color: var(--muted); }
+.sha-link { font-family: monospace; font-size: 0.8rem; }
+.hidden { display: none !important; }
+.commands-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  padding: 0.7rem 1rem;
+  margin: 1rem 0;
+}
+.cmd-line {
+  font-family: monospace;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.2rem 0;
+}
+.method-box {
+  background: var(--surface);
+  border-left: 3px solid var(--border);
+  padding: 0.6rem 0.9rem;
+  margin: 0.5rem 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+footer {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+@media (max-width: 500px) {
+  body { font-size: 14px; }
+  table { font-size: 0.82rem; }
+  th, td { padding: 0.35rem 0.4rem; }
+}
+</style>
+</head>
+<body>
+<h1>Antibody &#8212; sqlparse-ref</h1>
+<p class="question">Of the bugs this project already fixed, how many could come back without a test noticing?</p>
+<p class="summary-line">Before: 14 of 21 caught. After: 14 of 21 caught.</p>
+<p class="summary-note">Y = 21: the number of past bugs where the patch applied, tests ran, and a check was possible (CAUGHT + NOW CAUGHT + STILL EXPOSED + NO CHANGE FOUND). Excluded, NO DATA, and NOT A BUG rows are not counted.</p>
+
+<div class="filters" id="filters">
+  <button class="filter-btn active" data-filter="all">All (45)</button>
+  <button class="filter-btn" data-filter="CAUGHT">Caught (14)</button>
+  <button class="filter-btn" data-filter="STILL EXPOSED">Still Exposed (7)</button>
+  <button class="filter-btn" data-filter="NO DATA">No Data (21)</button>
+  <button class="filter-btn" data-filter="EXCLUDED">Excluded (3)</button>
+  <input id="search" type="search" placeholder="Filter by subject or SHA&hellip;" aria-label="Filter rows">
+</div>
+
+<noscript><p style="color:var(--muted);font-size:.85rem;margin:.5rem 0">Enable JavaScript for interactive filtering.</p></noscript>
+
+<table id="rows-table">
+<thead>
+<tr>
+  <th>Status</th>
+  <th>Description</th>
+  <th>Fix</th>
+  <th>Issue</th>
+</tr>
+</thead>
+<tbody id="rows-body">
+<tr data-status="STILL EXPOSED" data-sha="a51df6d9e2d31b44be9adb6bc8732517db6bf96b" data-subject="Measure reindent offsets backwards to avoid quadratic CPU use"><td><span class="badge badge-exposed" data-status="STILL EXPOSED">STILL EXPOSED</span></td><td>Measure reindent offsets backwards to avoid quadratic CPU use<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Note:</strong> no test catches it</p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/a51df6d9e2d31b44be9adb6bc8732517db6bf96b" target="_blank" rel="noopener">a51df6d9</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="d1d80602741f77ec78e5a04ce4719244cf32352e" data-subject="Fix uncontrolled CPU consumption (ReDoS) in the lexer&#x27;s handling of dollar-quoted literals and multiline comments."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Fix uncontrolled CPU consumption (ReDoS) in the lexer&#x27;s handling of dollar-quoted literals and multiline comments.<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/d1d80602741f77ec78e5a04ce4719244cf32352e" target="_blank" rel="noopener">d1d80602</a></td><td></td></tr>
+<tr data-status="STILL EXPOSED" data-sha="ef2012a5eeb491e604dea2b00d516904a3830c87" data-subject="Fix quadratic DoS in group_comments (GHSA-f2ff-p2ww-7p4p)"><td><span class="badge badge-exposed" data-status="STILL EXPOSED">STILL EXPOSED</span></td><td>Fix quadratic DoS in group_comments (GHSA-f2ff-p2ww-7p4p)<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Note:</strong> no test catches it</p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/ef2012a5eeb491e604dea2b00d516904a3830c87" target="_blank" rel="noopener">ef2012a5</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="a194d3187b04b0aed7a935c3401f068236fb6264" data-subject="Keep keyword before leading-dot float literal (issue601)"><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>Keep keyword before leading-dot float literal (issue601)<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_regressions.py::test_between_leading_dot_float_issue601[a BETWEEN .03 AND .06]</div><div class="test-id">tests/test_regressions.py::test_between_leading_dot_float_issue601[a between .03 and .06]</div></p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/a194d3187b04b0aed7a935c3401f068236fb6264" target="_blank" rel="noopener">a194d318</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="f66d12c245412f28c58f045b646eb53c0e691b8b" data-subject="Fix get_real_name for names with more than two dotted parts (#332)"><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>Fix get_real_name for names with more than two dotted parts (#332)<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_parse.py::test_get_real_name_multi_part_dotted</div></p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/f66d12c245412f28c58f045b646eb53c0e691b8b" target="_blank" rel="noopener">f66d12c2</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="ac3b9e0b25627feb42a7053074b6549df81dcfaf" data-subject="Recognize MATERIALIZED as a keyword (issue752)"><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>Recognize MATERIALIZED as a keyword (issue752)<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_regressions.py::test_materialized_view_issue752</div></p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/ac3b9e0b25627feb42a7053074b6549df81dcfaf" target="_blank" rel="noopener">ac3b9e0b</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="111b35cffcfe44b16fbdd27507f165bafd52a2a1" data-subject="Fix function grouping skipped for lowercase &#x27;as&#x27; in CREATE TABLE AS SELECT"><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>Fix function grouping skipped for lowercase &#x27;as&#x27; in CREATE TABLE AS SELECT<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_grouping.py::test_grouping_alias_ctas_lowercase_as</div></p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/111b35cffcfe44b16fbdd27507f165bafd52a2a1" target="_blank" rel="noopener">111b35cf</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="26d7d652218757828b64cfe7914660d529ab21e3" data-subject="Recognize ROW_FORMAT as a keyword (issue773)"><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>Recognize ROW_FORMAT as a keyword (issue773)<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_regressions.py::test_alter_table_row_format_issue773</div></p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/26d7d652218757828b64cfe7914660d529ab21e3" target="_blank" rel="noopener">26d7d652</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="8f978caa7cc777d845d358bfc82ea30110395d32" data-subject="Refactor statement splitter to a simplified stack-based architecture (fixes #845)"><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Refactor statement splitter to a simplified stack-based architecture (fixes #845)<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/8f978caa7cc777d845d358bfc82ea30110395d32" target="_blank" rel="noopener">8f978caa</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="da67ac16b8fa2c5041458bee728c8a914bed2d37" data-subject="Enhance DoS protection by raising SQLParseError for exceeded grouping limits (fixes #827)."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Enhance DoS protection by raising SQLParseError for exceeded grouping limits (fixes #827).<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/da67ac16b8fa2c5041458bee728c8a914bed2d37" target="_blank" rel="noopener">da67ac16</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="5ca50a2ee9b39e9efeea33e01f132d628144fb69" data-subject="Fix splitting of BEGIN TRANSACTION statements (fixes #826)."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Fix splitting of BEGIN TRANSACTION statements (fixes #826).<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/5ca50a2ee9b39e9efeea33e01f132d628144fb69" target="_blank" rel="noopener">5ca50a2e</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="1a3bfbd50b82c05d9adcc51bacba059671dc1bc7" data-subject="Fix handling of semicolons inside BEGIN...END blocks (fixes #809)."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Fix handling of semicolons inside BEGIN...END blocks (fixes #809).<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/1a3bfbd50b82c05d9adcc51bacba059671dc1bc7" target="_blank" rel="noopener">1a3bfbd5</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="e92a032c81d51a6645b4f8c32470481894818ba0" data-subject="Fix handling of IF EXISTS statements in BEGIN...END blocks (fixes #812)."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Fix handling of IF EXISTS statements in BEGIN...END blocks (fixes #812).<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/e92a032c81d51a6645b4f8c32470481894818ba0" target="_blank" rel="noopener">e92a032c</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="73c8ba3ae88b608d39740c0776fb15064232258e" data-subject="bugfix ISSUE_801; Remove all comments when only comments"><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>bugfix ISSUE_801; Remove all comments when only comments<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_format.py::TestFormat::test_strip_comments_single</div></p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/73c8ba3ae88b608d39740c0776fb15064232258e" target="_blank" rel="noopener">73c8ba3a</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="31903e09db518ee3969110073427196ef9cd46c3" data-subject="Add pre-commit hook support (fixes #537)"><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>Add pre-commit hook support (fixes #537)<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_cli.py::test_cli_multiple_files_with_inplace</div><div class="test-id">tests/test_cli.py::test_cli_multiple_files_without_inplace_fails</div><div class="test-id">tests/test_cli.py::test_cli_inplace_with_stdin_fails</div><div class="test-id">tests/test_cli.py::test_cli_outfile_with_multiple_files_fails</div><div class="test-id">tests/test_cli.py::test_cli_single_file_inplace</div><div class="test-id">tests/test_cli.py::test_cli_error_handling_continues</div></p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/31903e09db518ee3969110073427196ef9cd46c3" target="_blank" rel="noopener">31903e09</a></td><td></td></tr>
+<tr data-status="EXCLUDED" data-sha="f1d2d688bc542ee2645f8ecdf8f7bd9488a96136" data-subject="Add type annotations to public API functions"><td><span class="badge badge-excluded" data-status="EXCLUDED">EXCLUDED</span></td><td>Add type annotations to public API functions<br><small style="color:var(--muted)">non-behavioural: Source changes are identical after stripping non-behavioural elements</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/f1d2d688bc542ee2645f8ecdf8f7bd9488a96136" target="_blank" rel="noopener">f1d2d688</a></td><td></td></tr>
+<tr data-status="STILL EXPOSED" data-sha="694747fdbed387e05ba6904ed89183a42bb7c843" data-subject="fix: Add `ATTACH`, `DETACH` to PostgreSQL keywords."><td><span class="badge badge-exposed" data-status="STILL EXPOSED">STILL EXPOSED</span></td><td>fix: Add `ATTACH`, `DETACH` to PostgreSQL keywords.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Note:</strong> no test catches it</p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/694747fdbed387e05ba6904ed89183a42bb7c843" target="_blank" rel="noopener">694747fd</a></td><td></td></tr>
+<tr data-status="EXCLUDED" data-sha="274310956473601f53f8d0b7e9024f364b5f04b6" data-subject="Fixed &#x27;trailing&#x27; typo in split method documentation"><td><span class="badge badge-excluded" data-status="EXCLUDED">EXCLUDED</span></td><td>Fixed &#x27;trailing&#x27; typo in split method documentation<br><small style="color:var(--muted)">non-behavioural: Source changes are identical after stripping non-behavioural elements</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/274310956473601f53f8d0b7e9024f364b5f04b6" target="_blank" rel="noopener">27431095</a></td><td></td></tr>
+<tr data-status="EXCLUDED" data-sha="8eb778ca73c4b297b9319488835df295ef815e7e" data-subject="[fix] issue262 adding comment and tests"><td><span class="badge badge-excluded" data-status="EXCLUDED">EXCLUDED</span></td><td>[fix] issue262 adding comment and tests<br><small style="color:var(--muted)">non-behavioural: Source changes are identical after stripping non-behavioural elements</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/8eb778ca73c4b297b9319488835df295ef815e7e" target="_blank" rel="noopener">8eb778ca</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="af6df6c6627b5fcf98bc7bb46f780e1fa0d1a7ef" data-subject="[fix] fixing SQL-Hint deleting when clearing script from comments"><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>[fix] fixing SQL-Hint deleting when clearing script from comments<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/af6df6c6627b5fcf98bc7bb46f780e1fa0d1a7ef" target="_blank" rel="noopener">af6df6c6</a></td><td></td></tr>
+<tr data-status="STILL EXPOSED" data-sha="e48000a5d76ff4d762821708f99ca90962e25f46" data-subject="Add EXTENSION as keyword (fixes #785)."><td><span class="badge badge-exposed" data-status="STILL EXPOSED">STILL EXPOSED</span></td><td>Add EXTENSION as keyword (fixes #785).<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Note:</strong> no test catches it</p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/e48000a5d76ff4d762821708f99ca90962e25f46" target="_blank" rel="noopener">e48000a5</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="b126ba5b2004474e9ad899456c077f976b761319" data-subject="Fix tokenization of order keywords (fixes #532)."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Fix tokenization of order keywords (fixes #532).<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/b126ba5b2004474e9ad899456c077f976b761319" target="_blank" rel="noopener">b126ba5b</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="0c4902f3f7aafa8c2e63a375ec307c210842f543" data-subject="Descend into subgroups when removing whitespace (fixes #782)."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>Descend into subgroups when removing whitespace (fixes #782).<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_format.py::test_strip_ws_removes_trailing_ws_in_groups</div></p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/0c4902f3f7aafa8c2e63a375ec307c210842f543" target="_blank" rel="noopener">0c4902f3</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="791e25de46f443597d99314cfd1a68217bcaf970" data-subject="Fix error when splitting statements that contain multiple CASE clauses within a BEGIN block (fixes #784)."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Fix error when splitting statements that contain multiple CASE clauses within a BEGIN block (fixes #784).<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/791e25de46f443597d99314cfd1a68217bcaf970" target="_blank" rel="noopener">791e25de</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="bf74d8bc2c572b978997f7785747ad262025566c" data-subject="Add compact option to force a more compact formatting (fixes #783)."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Add compact option to force a more compact formatting (fixes #783).<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/bf74d8bc2c572b978997f7785747ad262025566c" target="_blank" rel="noopener">bf74d8bc</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="8b0342730b2e53dcc7887e5b4563d479444ec0ba" data-subject="Fix grouping of comments (fixes #772)."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Fix grouping of comments (fixes #772).<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/8b0342730b2e53dcc7887e5b4563d479444ec0ba" target="_blank" rel="noopener">8b034273</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="e03b74e608b71dd06824c2cb42421c0d790248e3" data-subject="Fix Function.get_parameters(), add Funtion.get_window()"><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>Fix Function.get_parameters(), add Funtion.get_window()<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_grouping.py::test_grouping_function</div></p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/e03b74e608b71dd06824c2cb42421c0d790248e3" target="_blank" rel="noopener">e03b74e6</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="617b8f6cd3c55bacf2c80130901508518753f7e1" data-subject="Add OVER clause, and group it into Function (fixes #701)"><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Add OVER clause, and group it into Function (fixes #701)<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/617b8f6cd3c55bacf2c80130901508518753f7e1" target="_blank" rel="noopener">617b8f6c</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="46971e5a804b29e7dbd437155a8ceffab8ef1cd5" data-subject="Fix parsing of PRIMARY KEY (fixes #740)."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>Fix parsing of PRIMARY KEY (fixes #740).<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_regressions.py::test_primary_key_issue740</div></p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/46971e5a804b29e7dbd437155a8ceffab8ef1cd5" target="_blank" rel="noopener">46971e5a</a></td><td></td></tr>
+<tr data-status="STILL EXPOSED" data-sha="d76e8a4425d82a6cd704b5e549a8cabefa931341" data-subject="Identify TRUNCATE as DDL, REVOKE/GRANT as DCL keywords."><td><span class="badge badge-exposed" data-status="STILL EXPOSED">STILL EXPOSED</span></td><td>Identify TRUNCATE as DDL, REVOKE/GRANT as DCL keywords.<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Note:</strong> no test catches it</p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/d76e8a4425d82a6cd704b5e549a8cabefa931341" target="_blank" rel="noopener">d76e8a44</a></td><td></td></tr>
+<tr data-status="STILL EXPOSED" data-sha="8c24779e027e92a1ed379fc271e20f540b0f3d20" data-subject="Improve formatting of statements with JSON operators (fixes #542)."><td><span class="badge badge-exposed" data-status="STILL EXPOSED">STILL EXPOSED</span></td><td>Improve formatting of statements with JSON operators (fixes #542).<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Note:</strong> no test catches it</p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/8c24779e027e92a1ed379fc271e20f540b0f3d20" target="_blank" rel="noopener">8c24779e</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="6b05583f119224a43f8047159120edd0228ebd76" data-subject="Add support for some of the JSON operators (fixes #682)."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>Add support for some of the JSON operators (fixes #682).<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_format.py::test_format_json_ops</div><div class="test-id">tests/test_parse.py::test_json_operators[-&gt;]</div><div class="test-id">tests/test_parse.py::test_json_operators[-&gt;&gt;]</div><div class="test-id">tests/test_parse.py::test_json_operators[#&gt;]</div><div class="test-id">tests/test_parse.py::test_json_operators[#&gt;&gt;]</div><div class="test-id">tests/test_parse.py::test_json_operators[@&gt;]</div><div class="test-id">tests/test_parse.py::test_json_operators[&lt;@]</div></p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/6b05583f119224a43f8047159120edd0228ebd76" target="_blank" rel="noopener">6b05583f</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="5bb129d3fc8a4d031bd37fab8e5ee24a199a9b8c" data-subject="Thread-safe initialization of Lexer class (fixes #730)."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Thread-safe initialization of Lexer class (fixes #730).<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/5bb129d3fc8a4d031bd37fab8e5ee24a199a9b8c" target="_blank" rel="noopener">5bb129d3</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="7334ac99152d02bb09ab0abe79377174c2867f7c" data-subject="Improve splitting of Transact SQL when using GO keyword (fixes #762)."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Improve splitting of Transact SQL when using GO keyword (fixes #762).<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/7334ac99152d02bb09ab0abe79377174c2867f7c" target="_blank" rel="noopener">7334ac99</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="39b5a02551de051b1e888135fe71759d5b49a134" data-subject="Ensure nested ordered identifiers are grouped (fixes #745)"><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>Ensure nested ordered identifiers are grouped (fixes #745)<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_grouping.py::test_grouping_nested_identifier_with_order</div></p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/39b5a02551de051b1e888135fe71759d5b49a134" target="_blank" rel="noopener">39b5a025</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="fac38cd03bea712e096222f16199a7482a4837da" data-subject="Ignore attributes starting with dunder in _TokenType (fixes #672)."><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>Ignore attributes starting with dunder in _TokenType (fixes #672).<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_regressions.py::test_copy_issue672</div></p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/fac38cd03bea712e096222f16199a7482a4837da" target="_blank" rel="noopener">fac38cd0</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="fc76056fb8f0ec713a3f2a2b6206a3336932c382" data-subject="Cleanup regex for detecting keywords (fixes #709)."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Cleanup regex for detecting keywords (fixes #709).<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/fc76056fb8f0ec713a3f2a2b6206a3336932c382" target="_blank" rel="noopener">fc76056f</a></td><td></td></tr>
+<tr data-status="CAUGHT" data-sha="dd9d5b91d7aa30e4a000d5370f09dc99378891dc" data-subject="Fix get_type with comments between WITH keyword"><td><span class="badge badge-caught" data-status="CAUGHT">CAUGHT</span></td><td>Fix get_type with comments between WITH keyword<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Catching tests:</strong><div class="test-id">tests/test_regressions.py::test_comment_between_cte_clauses_issue632</div></p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/dd9d5b91d7aa30e4a000d5370f09dc99378891dc" target="_blank" rel="noopener">dd9d5b91</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="8b789f286e1b6cbf05c15020ea7544cb7f02f8f7" data-subject="Switch to pyproject.toml (fixes #685)."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Switch to pyproject.toml (fixes #685).<br><small style="color:var(--muted)">no-change: Reverse patch applied but changed nothing</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/8b789f286e1b6cbf05c15020ea7544cb7f02f8f7" target="_blank" rel="noopener">8b789f28</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="e9241945801808d1db7f76bdccbbe9a200042c37" data-subject="Revert &quot;add regex pattern to identify IN as a Compasion token&quot;"><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Revert &quot;add regex pattern to identify IN as a Compasion token&quot;<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/e9241945801808d1db7f76bdccbbe9a200042c37" target="_blank" rel="noopener">e9241945</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="b72a8ff42f53cba0517b1dd9e8af051b4a060ecf" data-subject="Allow any unicode character as identifier name (fixes #641)."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Allow any unicode character as identifier name (fixes #641).<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/b72a8ff42f53cba0517b1dd9e8af051b4a060ecf" target="_blank" rel="noopener">b72a8ff4</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="403de6fc648ac4e012b60b49161c3f5f36dc944a" data-subject="Fixed bad parsing of create table statements that use lower case"><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Fixed bad parsing of create table statements that use lower case<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/403de6fc648ac4e012b60b49161c3f5f36dc944a" target="_blank" rel="noopener">403de6fc</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="0bbfd5f8326fd4291c390858ba8ff482ff5ced70" data-subject="Add DISTINCTROW keyword (fixes #677)."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Add DISTINCTROW keyword (fixes #677).<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/0bbfd5f8326fd4291c390858ba8ff482ff5ced70" target="_blank" rel="noopener">0bbfd5f8</a></td><td></td></tr>
+<tr data-status="STILL EXPOSED" data-sha="e58781dd632584c783ef082257309ea5efdb6750" data-subject="Fix INDICATOR keyword"><td><span class="badge badge-exposed" data-status="STILL EXPOSED">STILL EXPOSED</span></td><td>Fix INDICATOR keyword<details><summary>Evidence</summary><p style='margin:.3rem 0'><strong>Note:</strong> no test catches it</p></details></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/e58781dd632584c783ef082257309ea5efdb6750" target="_blank" rel="noopener">e58781dd</a></td><td></td></tr>
+<tr data-status="NO DATA" data-sha="e66046785b816e5c2d22f101f36faefd19c4a771" data-subject="Fix parsing of scientific numbers (fixes #399)."><td><span class="badge badge-no-data" data-status="NO DATA">NO DATA</span></td><td>Fix parsing of scientific numbers (fixes #399).<br><small style="color:var(--muted)">code-moved: git apply -R failed</small></td><td><a class="sha-link" href="https://github.com/andialbrecht/sqlparse/commit/e66046785b816e5c2d22f101f36faefd19c4a771" target="_blank" rel="noopener">e6604678</a></td><td></td></tr>
+</tbody>
+</table>
+
+<h2>Run it on your own project</h2>
+<div class="commands-box">
+  <div class="cmd-line"><code>python3.12 antibody.py setup &lt;name&gt; &lt;git-url&gt; [--rev SHA] [--deps PKG ...]</code></div>
+  <div class="cmd-line"><code>python3.12 antibody.py candidates &lt;name&gt;</code></div>
+  <div class="cmd-line"><code>python3.12 antibody.py run &lt;name&gt;</code></div>
+  <div class="cmd-line"><code>python3.12 antibody.py ledger &lt;name&gt;</code></div>
+</div>
+
+<h2>Method</h2>
+<div class="method-box">
+  For each past bug fix: apply the reverse patch, run the test suite, restore the code.
+  A <strong>CAUGHT</strong> row means at least one test failed when the bug was put back.
+  A <strong>NOW CAUGHT</strong> row means a new test was proved and just re-passed that check.
+  A <strong>STILL EXPOSED</strong> row means the patch applied, all tests stayed green,
+  and a probe confirmed the behaviour changed (or no check could tell either way).
+  The row says which. <strong>NO CHANGE FOUND</strong>: a probe ran but both outputs matched
+  (listed under &ldquo;Excluded after a check&rdquo;, with the check and both outputs).
+  <strong>NO DATA</strong>: the patch could not be applied or no tests ran (with its reason).
+</div>
+
+<h2>What this can&rsquo;t tell you</h2>
+<div class="method-box">
+  Rows with no data are <em>unknown</em>, never safe.
+  &ldquo;Caught&rdquo; means a test noticed the regression &mdash; not that the test is perfect or complete.
+  A green suite on a reverted patch is a lower bound, not a guarantee.
+</div>
+
+<script>
+(function() {
+  var activeFilter = "all";
+  var searchVal = "";
+  function applyFilters() {
+    document.querySelectorAll("#rows-body tr").forEach(function(row) {
+      var s = row.dataset.status || "";
+      var text = (row.dataset.subject || "") + " " + (row.dataset.sha || "");
+      var matchFilter = (activeFilter === "all") || (s === activeFilter);
+      var matchSearch = !searchVal || text.toLowerCase().indexOf(searchVal) !== -1;
+      row.classList.toggle("hidden", !(matchFilter && matchSearch));
+    });
+  }
+  document.querySelectorAll(".filter-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      activeFilter = btn.dataset.filter;
+      document.querySelectorAll(".filter-btn").forEach(function(b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      applyFilters();
+    });
+  });
+  var search = document.getElementById("search");
+  if (search) {
+    search.addEventListener("input", function() {
+      searchVal = search.value.toLowerCase();
+      applyFilters();
+    });
+  }
+})();
+</script>
+
+<footer>Made with IBM Bob</footer>
+</body>
+</html>

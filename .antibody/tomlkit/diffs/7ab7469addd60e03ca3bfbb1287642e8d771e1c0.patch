@@ -1,0 +1,16 @@
+diff --git a/tomlkit/parser.py b/tomlkit/parser.py
+index c97a08d..8c7b1a6 100644
+--- a/tomlkit/parser.py
++++ b/tomlkit/parser.py
+@@ -749,7 +749,10 @@ class Parser:
+             raw = raw[1:]
+ 
+         if len(raw) > 1 and (
+-            (raw.startswith("0") and not raw.startswith(("0.", "0o", "0x", "0b", "0e")))
++            (
++                raw.startswith("0")
++                and not raw.startswith(("0.", "0o", "0x", "0b", "0e", "0E"))
++            )
+             or (sign and raw.startswith("."))
+         ):
+             return None
