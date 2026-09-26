@@ -1,0 +1,13 @@
+diff --git a/sqlparse/keywords.py b/sqlparse/keywords.py
+index 6850628..cd17d63 100644
+--- a/sqlparse/keywords.py
++++ b/sqlparse/keywords.py
+@@ -314,7 +314,7 @@ KEYWORDS = {
+     'INCREMENT': tokens.Keyword,
+     'INDEX': tokens.Keyword,
+ 
+-    'INDITCATOR': tokens.Keyword,
++    'INDICATOR': tokens.Keyword,
+     'INFIX': tokens.Keyword,
+     'INHERITS': tokens.Keyword,
+     'INITIAL': tokens.Keyword,

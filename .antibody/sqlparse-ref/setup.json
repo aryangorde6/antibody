@@ -1,0 +1,17 @@
+{
+  "repo": "https://github.com/andialbrecht/sqlparse",
+  "head": "60cdc649726bf1bc4f1b336050560b336da715ec",
+  "deps": [
+    "pytest"
+  ],
+  "install_commands": [
+    "uv pip install --python targets/.venvs/sqlparse-ref/bin/python --quiet -e targets/sqlparse-ref",
+    "uv pip install --python targets/.venvs/sqlparse-ref/bin/python --quiet pytest"
+  ],
+  "baseline": {
+    "collected": 509,
+    "passed": 509,
+    "skipped": 0,
+    "seconds": 2.58
+  }
+}

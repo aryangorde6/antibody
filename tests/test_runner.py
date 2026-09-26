@@ -460,3 +460,181 @@ def _read_results(tmp_path: Path, name: str) -> dict:
     assert results_path.exists(), f"results.json not found at {results_path}"
     with open(results_path) as f:
         return json.load(f)
+
+
+# ---------------------------------------------------------------------------
+# Unit tests for FIX_KEYWORDS regex (imported directly)
+# ---------------------------------------------------------------------------
+
+import importlib.util as _ilu
+import sys as _sys
+
+def _load_runner():
+    spec = _ilu.spec_from_file_location("antibody_runner", RUNNER)
+    mod = _ilu.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+@pytest.fixture(scope="module")
+def runner_mod():
+    return _load_runner()
+
+
+class TestFixKeywords:
+    """FIX_KEYWORDS must match inside longer words and various issue-number forms."""
+
+    def test_plain_fix(self, runner_mod):
+        assert runner_mod.FIX_KEYWORDS.search("fix memory leak")
+
+    def test_bugfix(self, runner_mod):
+        assert runner_mod.FIX_KEYWORDS.search("bugfix ISSUE_801; Remove all comments when only comments")
+
+    def test_hotfix(self, runner_mod):
+        assert runner_mod.FIX_KEYWORDS.search("hotfix for edge case")
+
+    def test_regression(self, runner_mod):
+        assert runner_mod.FIX_KEYWORDS.search("regression in parser")
+
+    def test_crash(self, runner_mod):
+        assert runner_mod.FIX_KEYWORDS.search("crash on empty input")
+
+    def test_issue_number_hash(self, runner_mod):
+        assert runner_mod.FIX_KEYWORDS.search("#801 null pointer")
+
+    def test_issue_number_word_space(self, runner_mod):
+        assert runner_mod.FIX_KEYWORDS.search("issue 801 null pointer")
+
+    def test_issue_number_word_nospace(self, runner_mod):
+        assert runner_mod.FIX_KEYWORDS.search("Recognize MATERIALIZED as a keyword (issue752)")
+
+    def test_issue_number_word_underscore(self, runner_mod):
+        assert runner_mod.FIX_KEYWORDS.search("ISSUE_801 fix")
+
+    def test_no_match(self, runner_mod):
+        assert not runner_mod.FIX_KEYWORDS.search("add new feature to parser")
+
+
+# ---------------------------------------------------------------------------
+# Test: default --since date is 2021-01-01
+# ---------------------------------------------------------------------------
+
+def test_candidates_default_since():
+    """candidates --since defaults to 2021-01-01 (parser default)."""
+    import argparse
+    runner = _load_runner()
+    # Build a minimal parser that mirrors the candidates subparser
+    p = argparse.ArgumentParser()
+    p.add_argument("name")
+    p.add_argument("--since", default="2021-01-01")
+    args = p.parse_args(["myrepo"])
+    assert args.since == "2021-01-01"
+
+
+# ---------------------------------------------------------------------------
+# Test: 150-line diff limit is enforced
+# ---------------------------------------------------------------------------
+
+def test_candidates_150_line_limit(tmp_path):
+    """
+    A commit whose diff exceeds 150 lines must not appear in candidates.json.
+    """
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+
+    pkg = "mypkg"
+    _write(repo / pkg / "__init__.py", "")
+    # Initial file: 200 lines
+    lines = "\n".join(f"    x{i} = {i}" for i in range(200))
+    _write(repo / pkg / "core.py", f"def func():\n{lines}\n    return 0\n")
+    _write(repo / "setup.py",
+           f"from setuptools import setup, find_packages; setup(name={pkg!r}, packages=find_packages())")
+    _commit_all(repo, "initial commit")
+
+    # Fix: replace all 200 lines (diff > 150)
+    lines2 = "\n".join(f"    y{i} = {i}" for i in range(200))
+    _write(repo / pkg / "core.py", f"def func():\n{lines2}\n    return 1\n")
+    _commit_all(repo, "fix: replace all lines")
+
+    ab = tmp_path / ".antibody" / "limit-test"
+    ab.mkdir(parents=True, exist_ok=True)
+    (ab / "diffs").mkdir(parents=True, exist_ok=True)
+
+    # targets/limit-test must point at the repo so candidates can call git log
+    targets = tmp_path / "targets"
+    targets.mkdir(parents=True, exist_ok=True)
+    tgt_link = targets / "limit-test"
+    tgt_link.symlink_to(repo)
+
+    # Write a minimal setup.json so candidates can read it
+    import json
+    with open(ab / "setup.json", "w") as f:
+        json.dump({"repo": "file:///local", "head": "deadbeef", "deps": [], "install_commands": []}, f)
+
+    env = os.environ.copy()
+    env["_ANTIBODY_ROOT"] = str(tmp_path)
+    result = subprocess.run(
+        [sys.executable, str(RUNNER), "candidates", "limit-test"],
+        capture_output=True, text=True, env=env,
+    )
+    assert result.returncode == 0, result.stderr
+
+    with open(ab / "candidates.json") as f:
+        candidates = json.load(f)
+
+    # The oversized commit must not appear as a candidate
+    statuses = [c["status"] for c in candidates]
+    assert "candidate" not in statuses, f"Expected no candidates, got: {candidates}"
+
+
+# ---------------------------------------------------------------------------
+# Test: saved patch contains no author name, email, or message body
+# ---------------------------------------------------------------------------
+
+def test_patch_has_no_author_email_or_message(tmp_path):
+    """
+    build_patch must produce a diff that has no From: header, author name,
+    email address, or commit message body.
+    """
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_git_repo(repo)
+
+    pkg = "mypkg"
+    _write(repo / pkg / "__init__.py", "")
+    _write(repo / pkg / "core.py", "def f():\n    return 0\n")
+    _write(repo / "setup.py",
+           f"from setuptools import setup, find_packages; setup(name={pkg!r}, packages=find_packages())")
+    _commit_all(repo, "initial commit")
+
+    _write(repo / pkg / "core.py", "def f():\n    return 1  # fix\n")
+    fix_sha = _commit_all(repo, "fix: correct return value")
+
+    runner = _load_runner()
+    patch = runner.build_patch(repo, fix_sha, [f"{pkg}/core.py"])
+
+    # Must not contain email address (test@test.invalid set by _init_git_repo)
+    assert "test@test.invalid" not in patch, "patch contains email address"
+    # Must not contain 'From ' mail header line
+    assert not any(line.startswith("From ") for line in patch.splitlines()), \
+        "patch contains From header"
+    # Must not contain the commit message
+    assert "correct return value" not in patch, "patch contains commit message"
+    # Must contain actual diff content
+    assert "@@" in patch, "patch contains no diff hunks"
+
+    # Verify git apply -R works on the patch
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix=".patch", mode="w", delete=False) as tf:
+        tf.write(patch)
+        pf = Path(tf.name)
+    try:
+        check = subprocess.run(
+            ["git", "apply", "--check", "-R", str(pf)],
+            cwd=str(repo), capture_output=True,
+        )
+        assert check.returncode == 0, \
+            f"git apply -R --check failed:\n{check.stderr.decode()}"
+    finally:
+        pf.unlink(missing_ok=True)

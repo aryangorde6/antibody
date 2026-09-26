@@ -212,20 +212,28 @@ def cmd_setup(args: argparse.Namespace) -> None:
         run(["uv", "venv", "--python", "3.12", str(venv)])
 
     python = str(venv / "bin" / "python")
+    # Relative python path for recording in setup.json (relative to ROOT)
+    python_rel = str((venv / "bin" / "python").relative_to(ROOT))
+    tgt_rel = str(tgt.relative_to(ROOT))
 
     # Install project editable
     print("Installing project (editable) …")
     install_cmds = [
         ["uv", "pip", "install", "--python", python, "--quiet", "-e", str(tgt)],
     ]
+    install_cmds_rel = [
+        ["uv", "pip", "install", "--python", python_rel, "--quiet", "-e", tgt_rel],
+    ]
     # Also install deps
     if deps:
         dep_cmd = ["uv", "pip", "install", "--python", python, "--quiet"] + deps
         install_cmds.append(dep_cmd)
+        install_cmds_rel.append(["uv", "pip", "install", "--python", python_rel, "--quiet"] + deps)
     else:
         # Always install pytest
         dep_cmd = ["uv", "pip", "install", "--python", python, "--quiet", "pytest"]
         install_cmds.append(dep_cmd)
+        install_cmds_rel.append(["uv", "pip", "install", "--python", python_rel, "--quiet", "pytest"])
 
     for cmd_list in install_cmds:
         run(cmd_list)
@@ -262,7 +270,7 @@ def cmd_setup(args: argparse.Namespace) -> None:
         "repo": git_url,
         "head": head_sha,
         "deps": deps,
-        "install_commands": [" ".join(c) for c in install_cmds],
+        "install_commands": [" ".join(c) for c in install_cmds_rel],
         "baseline": {
             "collected": collected,
             "passed": passed,
@@ -282,10 +290,15 @@ def cmd_setup(args: argparse.Namespace) -> None:
 # candidates
 # ---------------------------------------------------------------------------
 
-# Keywords that mark a fix commit
+# Keywords that mark a fix commit.
+# fix/bug/crash/regress match inside longer words (bugfix, hotfix, regression).
+# Issue numbers match as #801, issue 801, issue752, ISSUE_801.
 FIX_KEYWORDS = re.compile(
-    r"\b(fix(es|ed|ing)?|bug|crash|regression|issue|CVE-\d{4}-\d+|GHSA-[0-9a-z-]+)\b"
-    r"|#\d+",
+    r"(fix|bug|crash|regress)"
+    r"|issue[\s_]?\d+"
+    r"|#\d+"
+    r"|CVE-\d{4}-\d+"
+    r"|GHSA-[0-9a-z-]+",
     re.IGNORECASE,
 )
 
@@ -466,9 +479,12 @@ def count_diff_lines(diff_text: str) -> int:
 
 
 def build_patch(tgt: Path, sha: str, src_files: list[str]) -> str:
-    """Return source-only patch hunks for the given files."""
+    """Return a diff of source files only (no author, email, or message body).
+    Uses ``git show <sha> --format= -- <files>`` so the output starts directly
+    with the diff header and can be reversed with ``git apply -R``.
+    """
     result = run(
-        ["git", "format-patch", "--stdout", "-1", sha, "--", *src_files],
+        ["git", "show", sha, "--format=", "--", *src_files],
         cwd=tgt, capture=True
     )
     return result.stdout

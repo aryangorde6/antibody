@@ -1,0 +1,34 @@
+diff --git a/sqlparse/engine/grouping.py b/sqlparse/engine/grouping.py
+index 926a3c1..a63f4da 100644
+--- a/sqlparse/engine/grouping.py
++++ b/sqlparse/engine/grouping.py
+@@ -314,7 +314,7 @@ def group_comments(tlist):
+     tidx, token = tlist.token_next_by(t=T.Comment)
+     while token:
+         eidx, end = tlist.token_not_matching(
+-            lambda tk: imt(tk, t=T.Comment) or tk.is_whitespace, idx=tidx)
++            lambda tk: imt(tk, t=T.Comment) or tk.is_newline, idx=tidx)
+         if end is not None:
+             eidx, end = tlist.token_prev(eidx, skip_ws=False)
+             tlist.group_tokens(sql.Comment, tidx, eidx)
+diff --git a/sqlparse/sql.py b/sqlparse/sql.py
+index bd5f35b..1037375 100644
+--- a/sqlparse/sql.py
++++ b/sqlparse/sql.py
+@@ -46,7 +46,7 @@ class Token:
+     """
+ 
+     __slots__ = ('value', 'ttype', 'parent', 'normalized', 'is_keyword',
+-                 'is_group', 'is_whitespace')
++                 'is_group', 'is_whitespace', 'is_newline')
+ 
+     def __init__(self, ttype, value):
+         value = str(value)
+@@ -56,6 +56,7 @@ class Token:
+         self.is_group = False
+         self.is_keyword = ttype in T.Keyword
+         self.is_whitespace = self.ttype in T.Whitespace
++        self.is_newline = self.ttype in T.Newline
+         self.normalized = value.upper() if self.is_keyword else value
+ 
+     def __str__(self):

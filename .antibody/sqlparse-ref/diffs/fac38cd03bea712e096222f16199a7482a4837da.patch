@@ -1,0 +1,14 @@
+diff --git a/sqlparse/tokens.py b/sqlparse/tokens.py
+index d92bbdc..143f66b 100644
+--- a/sqlparse/tokens.py
++++ b/sqlparse/tokens.py
+@@ -19,6 +19,9 @@ class _TokenType(tuple):
+         return item is not None and (self is item or item[:len(self)] == self)
+ 
+     def __getattr__(self, name):
++        # don't mess with dunder
++        if name.startswith('__'):
++            return super().__getattr__(self, name)
+         new = _TokenType(self + (name,))
+         setattr(self, name, new)
+         new.parent = self
