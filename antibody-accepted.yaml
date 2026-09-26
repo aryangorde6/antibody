@@ -1,0 +1,2 @@
+- sha: e58781dd632584c783ef082257309ea5efdb6750
+  reason: Can't recur, because sqlparse's default lexer also loads the Oracle keyword table, which lists INDICATOR, so with the typo fix undone INDICATOR is still a keyword and no test can see a difference.
