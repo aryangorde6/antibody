@@ -455,7 +455,7 @@ _PERSON_TRAILER_RE = re.compile(
 # Inline trailer pattern: a trailer key appearing *anywhere* in the line
 # (e.g. "fix: blahSigned-off-by: Name <email>").
 _INLINE_TRAILER_RE = re.compile(
-    r"([A-Za-z]+(?:-[A-Za-z]+)*-by|Cc)\s*:",
+    r"([A-Za-z]+(?:-[A-Za-z]+)*-by|(?<![A-Za-z])Cc)\s*:",
     re.IGNORECASE,
 )
 
@@ -835,8 +835,9 @@ def git_restore(tgt: Path) -> None:
         cwd=str(tgt),
         capture_output=True,
     )
+    # Keep tests/antibody/: the new tests being proved live there, untracked.
     subprocess.run(
-        ["git", "clean", "-fd"],
+        ["git", "clean", "-fd", "-e", "tests/antibody/"],
         cwd=str(tgt),
         capture_output=True,
     )
@@ -1795,17 +1796,21 @@ def _do_prove(name: str, sha: str, test_arg: str) -> None:
     proofs_dir.mkdir(parents=True, exist_ok=True)
     out_path = proofs_dir / f"{sha}.json"
 
-    # Resolve test path: could be a file path or node ID
-    # If it contains "::", treat as node ID; otherwise as a file path
-    test_node = test_arg  # use as-is for pytest
-    test_file: Path | None = None
-    if "::" in test_arg:
-        test_file = tgt / test_arg.split("::")[0]
-    else:
-        test_file = Path(test_arg) if Path(test_arg).is_absolute() else tgt / test_arg
-        if not test_file.exists():
-            # Try relative to cwd
-            test_file = Path(test_arg).resolve()
+    # Resolve test path: a file path or node ID, relative to the target
+    # (tests/antibody/test_x.py) or to the repository root, as the skill
+    # passes it (targets/<name>/tests/antibody/test_x.py). pytest runs inside
+    # the target, so it gets the path relative to the target.
+    file_part, sep, node_rest = test_arg.partition("::")
+    test_file: Path | None = Path(file_part)
+    if not test_file.is_absolute():
+        test_file = next(
+            (p for p in (tgt / file_part, ROOT / file_part) if p.exists()),
+            Path(file_part).resolve(),
+        )
+    try:
+        test_node = str(test_file.resolve().relative_to(tgt.resolve())) + sep + node_rest
+    except ValueError:
+        test_node = test_arg
 
     # Reject test that reads the package source
     if test_file and test_file.exists():
@@ -1815,6 +1820,7 @@ def _do_prove(name: str, sha: str, test_arg: str) -> None:
             with open(out_path, "w") as f:
                 json.dump({
                     "verdict": "NOT PROVEN",
+                    "test": test_node,
                     "step": "rejected: test reads package source",
                     "runs_with_fix": [],
                     "runs_without_fix": [],
@@ -1843,6 +1849,7 @@ def _do_prove(name: str, sha: str, test_arg: str) -> None:
             with open(out_path, "w") as f:
                 json.dump({
                     "verdict": "NOT PROVEN",
+                    "test": test_node,
                     "step": f"step 1 run {run_i+1}: {e}",
                     "runs_with_fix": runs_with_fix,
                     "runs_without_fix": [],
@@ -1864,6 +1871,7 @@ def _do_prove(name: str, sha: str, test_arg: str) -> None:
             with open(out_path, "w") as f:
                 json.dump({
                     "verdict": "NOT PROVEN",
+                    "test": test_node,
                     "step": f"step 1 run {run_i+1}: not collected",
                     "runs_with_fix": runs_with_fix,
                     "runs_without_fix": [],
@@ -1878,6 +1886,7 @@ def _do_prove(name: str, sha: str, test_arg: str) -> None:
             with open(out_path, "w") as f:
                 json.dump({
                     "verdict": "NOT PROVEN",
+                    "test": test_node,
                     "step": f"step 1 run {run_i+1}: test failed with fix in",
                     "runs_with_fix": runs_with_fix,
                     "runs_without_fix": [],
@@ -1900,6 +1909,7 @@ def _do_prove(name: str, sha: str, test_arg: str) -> None:
             with open(out_path, "w") as f:
                 json.dump({
                     "verdict": "NOT PROVEN",
+                    "test": test_node,
                     "step": f"step 2: patch did not apply ({fail_reason})",
                     "runs_with_fix": runs_with_fix,
                     "runs_without_fix": [],
@@ -1918,6 +1928,7 @@ def _do_prove(name: str, sha: str, test_arg: str) -> None:
                 with open(out_path, "w") as f:
                     json.dump({
                         "verdict": "NOT PROVEN",
+                        "test": test_node,
                         "step": f"step 2 run {run_i+1}: {e}",
                         "runs_with_fix": runs_with_fix,
                         "runs_without_fix": runs_without_fix,
@@ -1943,6 +1954,7 @@ def _do_prove(name: str, sha: str, test_arg: str) -> None:
                 with open(out_path, "w") as f:
                     json.dump({
                         "verdict": "NOT PROVEN",
+                        "test": test_node,
                         "step": f"step 2 run {run_i+1}: collection error",
                         "runs_with_fix": runs_with_fix,
                         "runs_without_fix": runs_without_fix,
@@ -1957,6 +1969,7 @@ def _do_prove(name: str, sha: str, test_arg: str) -> None:
                 with open(out_path, "w") as f:
                     json.dump({
                         "verdict": "NOT PROVEN",
+                        "test": test_node,
                         "step": f"step 2 run {run_i+1}: test still passes with bug back",
                         "runs_with_fix": runs_with_fix,
                         "runs_without_fix": runs_without_fix,
@@ -1973,6 +1986,7 @@ def _do_prove(name: str, sha: str, test_arg: str) -> None:
                     with open(out_path, "w") as f:
                         json.dump({
                             "verdict": "NOT PROVEN",
+                            "test": test_node,
                             "step": f"step 2 run {run_i+1}: failure not AssertionError (got disallowed exception)",
                             "runs_with_fix": runs_with_fix,
                             "runs_without_fix": runs_without_fix,
@@ -2007,6 +2021,7 @@ def _do_prove(name: str, sha: str, test_arg: str) -> None:
         with open(out_path, "w") as f:
             json.dump({
                 "verdict": "NOT PROVEN",
+                "test": test_node,
                 "step": "step 3: working tree dirty after restore",
                 "runs_with_fix": runs_with_fix,
                 "runs_without_fix": runs_without_fix,
@@ -2024,9 +2039,8 @@ def _do_prove(name: str, sha: str, test_arg: str) -> None:
                 full_ignore_args.extend(["--ignore", str(tf)])
 
     try:
-        full_report = _run_pytest_single(
+        full_report = run_suite(
             name,
-            test_node,
             extra_args=full_ignore_args,
             timeout_secs=300,
         )
@@ -2036,6 +2050,7 @@ def _do_prove(name: str, sha: str, test_arg: str) -> None:
         with open(out_path, "w") as f:
             json.dump({
                 "verdict": "NOT PROVEN",
+                "test": test_node,
                 "step": f"step 4: {e}",
                 "runs_with_fix": runs_with_fix,
                 "runs_without_fix": runs_without_fix,
@@ -2050,6 +2065,7 @@ def _do_prove(name: str, sha: str, test_arg: str) -> None:
         with open(out_path, "w") as f:
             json.dump({
                 "verdict": "NOT PROVEN",
+                "test": test_node,
                 "step": f"step 4: full suite has failures",
                 "runs_with_fix": runs_with_fix,
                 "runs_without_fix": runs_without_fix,
@@ -2062,6 +2078,7 @@ def _do_prove(name: str, sha: str, test_arg: str) -> None:
     with open(out_path, "w") as f:
         json.dump({
             "verdict": "PROVEN",
+            "test": test_node,
             "step": None,
             "runs_with_fix": runs_with_fix,
             "runs_without_fix": runs_without_fix,
@@ -2092,6 +2109,14 @@ def _isodate() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
 
 
+def _is_not_a_bug(entry: dict | None) -> bool:
+    """True if a curated.json entry's verdict is NOT-A-BUG (the pinned
+    format); "NOT A BUG" is accepted too."""
+    if not isinstance(entry, dict):
+        return False
+    return str(entry.get("verdict", "")).strip().upper().replace("-", " ") == "NOT A BUG"
+
+
 def _map_status(row: dict, proofs_dir: Path | None, probes_dir: Path | None,
                 curated: dict, explanations: dict) -> dict:
     """
@@ -2110,7 +2135,7 @@ def _map_status(row: dict, proofs_dir: Path | None, probes_dir: Path | None,
     # Curated override
     if sha in curated:
         c = curated[sha]
-        if c.get("verdict") == "NOT A BUG":
+        if _is_not_a_bug(c):
             return {
                 "sha": sha,
                 "status": "NOT A BUG",
@@ -2360,7 +2385,8 @@ pre {{
   max-height: 14rem;
 }}
 .test-id {{ font-family: monospace; font-size: 0.8rem; color: var(--muted); }}
-.sha-link {{ font-family: monospace; font-size: 0.8rem; }}
+.sha-link {{ font-family: monospace; font-size: 0.8rem; white-space: nowrap; word-break: normal; }}
+td.sha-cell {{ white-space: nowrap; word-break: normal; }}
 .hidden {{ display: none !important; }}
 .commands-box {{
   background: var(--surface);
@@ -2373,10 +2399,22 @@ pre {{
   font-family: monospace;
   font-size: 0.85rem;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
-  margin: 0.2rem 0;
+  margin: 0.3rem 0;
 }}
+.cmd-line code {{ flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; user-select: all; }}
+.copy-btn {{
+  flex: 0 0 auto;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.3rem;
+  background: var(--bg, transparent);
+  color: var(--text);
+  font-size: 0.75rem;
+  cursor: pointer;
+}}
+.cmd-note {{ font-size: 0.8rem; color: var(--muted); margin: 0.4rem 0 0; }}
 .method-box {{
   background: var(--surface);
   border-left: 3px solid var(--border);
@@ -2429,10 +2467,11 @@ footer {{
 
 <h2>Run it on your own project</h2>
 <div class="commands-box">
-  <div class="cmd-line"><code>python3.12 antibody.py setup &lt;name&gt; &lt;git-url&gt; [--rev SHA] [--deps PKG ...]</code></div>
-  <div class="cmd-line"><code>python3.12 antibody.py candidates &lt;name&gt;</code></div>
-  <div class="cmd-line"><code>python3.12 antibody.py run &lt;name&gt;</code></div>
-  <div class="cmd-line"><code>python3.12 antibody.py ledger &lt;name&gt;</code></div>
+  <div class="cmd-line"><code>python3 .bob/skills/recurrence-audit/scripts/antibody.py setup &lt;name&gt; &lt;git-url&gt; [--rev SHA] [--deps PKG ...]</code><button class="copy-btn" type="button" hidden>Copy</button></div>
+  <div class="cmd-line"><code>python3 .bob/skills/recurrence-audit/scripts/antibody.py candidates &lt;name&gt;</code><button class="copy-btn" type="button" hidden>Copy</button></div>
+  <div class="cmd-line"><code>python3 .bob/skills/recurrence-audit/scripts/antibody.py run &lt;name&gt;</code><button class="copy-btn" type="button" hidden>Copy</button></div>
+  <div class="cmd-line"><code>python3 .bob/skills/recurrence-audit/scripts/antibody.py ledger &lt;name&gt;</code><button class="copy-btn" type="button" hidden>Copy</button></div>
+  <p class="cmd-note">Needs Python 3.12 or newer. Run from the root of the repository that holds <code>.bob/</code>.</p>
 </div>
 
 <h2>Method</h2>
@@ -2473,6 +2512,17 @@ footer {{
       document.querySelectorAll(".filter-btn").forEach(function(b) {{ b.classList.remove("active"); }});
       btn.classList.add("active");
       applyFilters();
+    }});
+  }});
+  document.querySelectorAll(".copy-btn").forEach(function(btn) {{
+    var code = btn.parentNode.querySelector("code");
+    if (!code || !navigator.clipboard) return;
+    btn.hidden = false;
+    btn.addEventListener("click", function() {{
+      navigator.clipboard.writeText(code.textContent).then(function() {{
+        btn.textContent = "Copied";
+        setTimeout(function() {{ btn.textContent = "Copy"; }}, 1500);
+      }});
     }});
   }});
   var search = document.getElementById("search");
@@ -2572,7 +2622,7 @@ def _build_row_html(lr: dict, repo_url: str) -> str:
         f'<tr data-status="{_e(status)}" data-sha="{_e(sha)}" data-subject="{_e(line)}">'
         f'<td>{badge}</td>'
         f'<td>{desc_cell}</td>'
-        f'<td>{sha_cell}</td>'
+        f'<td class="sha-cell">{sha_cell}</td>'
         f'<td>{issue_cell}</td>'
         f'</tr>'
     )
@@ -2654,12 +2704,53 @@ def cmd_ledger(args: argparse.Namespace) -> None:
     with open(results_path, "r", encoding="utf-8") as f:
         results_data: dict = json.load(f)
 
-    rows_in = results_data.get("rows", [])
+    results_rows = results_data.get("rows", [])
 
-    if len(rows_in) != len(candidates):
+    curated_path = ab / "curated.json"
+    curated: dict = {}
+    curated_sha256: str | None = None
+    curated_ts: str | None = None
+    if curated_path.exists():
+        with open(curated_path, "r", encoding="utf-8") as f:
+            curated = json.load(f)
+        curated_sha256 = _sha256_file(curated_path)
+        curated_ts = datetime.datetime.fromtimestamp(
+            curated_path.stat().st_mtime, tz=datetime.timezone.utc
+        ).isoformat(timespec="seconds")
+
+    # One ledger row per candidate. `run --shas` runs only the rows curated
+    # as BUG, so a candidate may have no results row when curated.json marks
+    # it NOT-A-BUG or candidates.json already excludes it.
+    by_sha = {r["sha"]: r for r in results_rows}
+    cand_shas = {c["sha"] for c in candidates}
+    unknown = [s for s in by_sha if s not in cand_shas]
+    if unknown:
         die(
-            f"Row count mismatch: results.json has {len(rows_in)} rows but "
-            f"candidates.json has {len(candidates)} entries. Re-run `run {name}`."
+            f"results.json has rows that are not in candidates.json: "
+            f"{', '.join(s[:12] for s in unknown)}. Re-run `run {name}`."
+        )
+    rows_in: list[dict] = []
+    missing: list[str] = []
+    for c in candidates:
+        sha = c["sha"]
+        if sha in by_sha:
+            rows_in.append(by_sha[sha])
+        elif str(c.get("status", "")).startswith("EXCLUDED") or _is_not_a_bug(curated.get(sha)):
+            rows_in.append({
+                "sha": sha,
+                "subject": c.get("subject", ""),
+                "src_files": c.get("src_files", []),
+                "status": c.get("status", ""),
+                "reason": c.get("reason", ""),
+                "catching_tests": [],
+            })
+        else:
+            missing.append(sha)
+    if missing:
+        die(
+            f"No results row for {len(missing)} candidate(s) that are neither "
+            f"excluded nor curated NOT-A-BUG: {', '.join(s[:12] for s in missing)}. "
+            f"Run `run {name} --shas FILE` with them."
         )
 
     setup_path = ab / "setup.json"
@@ -2672,28 +2763,17 @@ def cmd_ledger(args: argparse.Namespace) -> None:
 
     probes_dir = ab / "probes"
     proofs_dir = ab / "proofs"
-    curated_path = ab / "curated.json"
     explanations_path = ab / "explanations.json"
-
-    curated: dict = {}
-    curated_sha256: str | None = None
-    curated_ts: str | None = None
-    if curated_path.exists():
-        with open(curated_path, "r", encoding="utf-8") as f:
-            curated = json.load(f)
-        curated_sha256 = _sha256_file(curated_path)
-        curated_ts = datetime.datetime.fromtimestamp(
-            curated_path.stat().st_mtime, tz=datetime.timezone.utc
-        ).isoformat(timespec="seconds")
 
     explanations: dict = {}
     if explanations_path.exists():
         with open(explanations_path, "r", encoding="utf-8") as f:
             explanations = json.load(f)
 
-    # Re-prove: for every sha with a PROVEN proof, re-run prove.
-    # Only rows that re-prove successfully are eligible for NOW CAUGHT.
-    reproved_shas: set[str] = set()
+    # Re-prove: for every sha with a PROVEN proof, re-run prove with the test
+    # the proof names. Only rows that re-prove successfully are eligible for
+    # NOW CAUGHT.
+    reproved_tests: dict[str, str] = {}
     if proofs_dir.exists():
         for proof_file in sorted(proofs_dir.glob("*.json")):
             try:
@@ -2703,28 +2783,28 @@ def cmd_ledger(args: argparse.Namespace) -> None:
             if proof_data.get("verdict") != "PROVEN":
                 continue
             sha = proof_file.stem
-            # Find the matching results row to get the test node
             result_row = next((r for r in rows_in if r["sha"] == sha), None)
             if not result_row:
                 continue
-            catching = result_row.get("catching_tests", [])
-            if not catching:
+            test_node = proof_data.get("test") or next(iter(result_row.get("catching_tests", [])), "")
+            if not test_node:
                 continue
-            test_node = catching[0]
             patch_path = diffs_dir(name) / f"{sha}.patch"
             if not patch_path.exists():
                 continue
+            print(f"Re-proving {sha[:10]} with {test_node}")
             with target_lock(name):
                 try:
                     _do_prove(name, sha, test_node)
                     new_proof_path = proofs_dir / f"{sha}.json"
                     new_proof = json.loads(new_proof_path.read_text())
                     if new_proof.get("verdict") == "PROVEN":
-                        reproved_shas.add(sha)
+                        reproved_tests[sha] = new_proof.get("test") or test_node
                 except Exception:
                     pass
 
     # Build ledger rows
+    tgt = target_dir(name)
     ledger_rows: list[dict] = []
     for row in rows_in:
         sha = row["sha"]
@@ -2735,8 +2815,22 @@ def cmd_ledger(args: argparse.Namespace) -> None:
             curated,
             explanations,
         )
-        if sha in reproved_shas and lr["status"] == "CAUGHT":
+        # A new test that just re-proved turns an exposed row into NOW CAUGHT.
+        # A CAUGHT row stays CAUGHT unless only antibody tests catch it.
+        new_test = reproved_tests.get(sha)
+        only_new = bool(row.get("catching_tests")) and all(
+            str(t).startswith("tests/antibody/") for t in row.get("catching_tests", [])
+        )
+        if new_test and (lr["status"] in ("STILL EXPOSED", "NO CHANGE FOUND")
+                         or (lr["status"] == "CAUGHT" and only_new)):
             lr["status"] = "NOW CAUGHT"
+            lr["catching_tests"] = [new_test]
+            lr["reason"] = ""
+            lr["probe_output"] = None
+            try:
+                lr["proof_code"] = (tgt / new_test.split("::")[0]).read_text(encoding="utf-8")
+            except OSError:
+                lr["proof_code"] = None
         ledger_rows.append(lr)
 
     checkable_statuses = {"CAUGHT", "NOW CAUGHT", "STILL EXPOSED", "NO CHANGE FOUND"}
@@ -2782,6 +2876,12 @@ def cmd_ledger(args: argparse.Namespace) -> None:
     if publish:
         _publish_ledger(name, ab, ledger, page_html, proofs_dir)
 
+    # The summary line, as the page shows it.
+    if n_y == 0:
+        print("No past bug could be re-checked on today's code")
+    else:
+        print(f"Before: {n_before_caught} of {n_y} caught. After: {n_after_caught} of {n_y} caught.")
+
 
 def _publish_ledger(name: str, ab: Path, ledger: dict, page_html: str, proofs_dir: Path) -> None:
     root = ROOT
@@ -2791,21 +2891,17 @@ def _publish_ledger(name: str, ab: Path, ledger: dict, page_html: str, proofs_di
     shutil.copy2(ab / "ledger.json", audits_dir / "ledger.json")
     print(f"Published {audits_dir / 'ledger.json'}")
 
-    if proofs_dir.exists():
-        for proof_file in proofs_dir.glob("*.json"):
-            try:
-                proof_data = json.loads(proof_file.read_text())
-            except Exception:
-                continue
-            if proof_data.get("verdict") != "PROVEN":
-                continue
-            tgt = target_dir(name)
-            tests_ab_dir = tgt / "tests" / "antibody"
-            if tests_ab_dir.exists():
-                for tf in tests_ab_dir.glob("*.py"):
-                    dest = audits_dir / tf.name
-                    shutil.copy2(tf, dest)
-                    print(f"Published {dest}")
+    # Publish only the tests of the rows that are NOW CAUGHT (proved and re-proved).
+    tgt = target_dir(name)
+    for row in ledger.get("rows", []):
+        if row.get("status") != "NOW CAUGHT":
+            continue
+        for test in row.get("catching_tests", []):
+            tf = tgt / str(test).split("::")[0]
+            if tf.is_file():
+                dest = audits_dir / tf.name
+                shutil.copy2(tf, dest)
+                print(f"Published {dest}")
 
     site_dir = root / "site" / name
     site_dir.mkdir(parents=True, exist_ok=True)

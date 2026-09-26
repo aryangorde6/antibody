@@ -1,0 +1,1543 @@
+[
+  {
+    "sha": "8c959b51c7da2734662af759a7c9f95e9a78060a",
+    "subject": "chore: Define project metadata via [project] table (PEP 621) (#607)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 2,
+    "status": "EXCLUDED:non-behavioural",
+    "reason": "Source changes are identical after stripping non-behavioural elements"
+  },
+  {
+    "sha": "4b38becd75405e0f38ef3e47e9839eb407591c8a",
+    "subject": "fix: reject array slice assignment before mutation (#600)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 4,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "7ab7469addd60e03ca3bfbb1287642e8d771e1c0",
+    "subject": "Accept uppercase E exponent after a leading-zero mantissa (#586)",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 5,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "d8ed1e3cdb024dfc2c6f12b45a0dfd4d4d91f727",
+    "subject": "chore: release 0.15..1 (#564)",
+    "src_files": [
+      "tomlkit/__init__.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "94e62fbef9d16093dec86728888474197f4a5cc7",
+    "subject": "Float is not a sequence  (#563)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 19,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "495a42ecc9119eaaeb895def0fd025a71cd1cf60",
+    "subject": "Fix top-level scalar captured by a table rendered from a dotted key (#550)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 24,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "21a4942ed31e773061c9fc047d55b1bb3c637ee3",
+    "subject": "reject a comment containing line breaks in Item.comment and add_line (#544)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 4,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "8cd44f58b499da3c80a29bc877a512665a15e0bb",
+    "subject": "fix: preserve leading newline of multiline string built with string() (#551)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 7,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "67d3e86502706df2a9ed67114ab67e25bcdcbbb7",
+    "subject": "Fix array of tables replacing a dotted key swallowing the next sibling (#542) (#549)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 12,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "e23a25438c6cc9b8cc28b6dcf76dc52f9c7a33e3",
+    "subject": "fix: avoid duplicate table header when adding a key to an out-of-order table (#545)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 13,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "b48c094775fba4cb3c16dea4c302ae5e371ac4e9",
+    "subject": "reject overlong decimal integer instead of coercing to inf (#538)",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 9,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "cc05afa962244b3d1c781a7fc54f66b7f29ef8b7",
+    "subject": "Represent out-of-order table proxies with merged values (#536)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 6,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "49069361a41d2050086b7ec0f69a38a548802867",
+    "subject": "Preserve table display names on self assignment (#537)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "b2821370ca8a7ead712287d7ec856b36165aaef7",
+    "subject": "Preserve whitespace when replacing super tables (#534)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 9,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "43668ddebc3f082bf385d328aceed18d26976897",
+    "subject": "fix: keep newline after dotted inline table (#533)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 9,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "d3c76f0bbe90af4b12a3b83bd8e59bc9061dfe85",
+    "subject": "fix: reject out-of-order concrete+super table redefinitions at parse time (#530)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 18,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "d548e18b71b28d0e9628127bf0b9dfc5a254dca0",
+    "subject": "raise on malformed array element instead of dropping it (#527)",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 9,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "11e22aefccd8069a90ae75d20613b9b1068754a1",
+    "subject": "fix: reject tables inside inline tables (#532)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 9,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "ee4eedbacc8eb72872af050996c7396ecce190b9",
+    "subject": "Fix duplicated prefix and captured sibling when replacing a dotted key with a table (#526)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 35,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "86f45625bf67b5ae875fec8ced6d9032aef886e1",
+    "subject": "Render inline tables in O(n) instead of O(n^2) (#525)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 38,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "de68fd06eef61aab0d50d69fb589a43f00a046bf",
+    "subject": "Fix ParseError when a sub-table extends an array of tables out of order (#498)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 10,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "9c126774d3f3481a4da3a433ad44cbe1f8bf1390",
+    "subject": "reject array-of-tables header missing its second closing bracket (#519)",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 8,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "c468c978b1c77528986c4e5eb9b27c92858ddeec",
+    "subject": "Bulk-scan multiline string bodies (#518)",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 58,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "25ae63abce3181fd376aed7acdc52418d126df04",
+    "subject": "Merge AoT fragments when building an out-of-order table proxy (#507)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 39,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "9ac3f98214dbfbca0157b6c370c7986f497c34e4",
+    "subject": "Speed up unwrap() by resolving keys from the key map, not items() (#521)",
+    "src_files": [
+      "tomlkit/container.py",
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 37,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "483f240ea7d45bd9c82fbd16d8e63270a69770c3",
+    "subject": "Return a single key from key() for a single-element list (#520)",
+    "src_files": [
+      "tomlkit/api.py"
+    ],
+    "diff_lines": 5,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "ae1b6790d99b21bc0a339a5825e7d5e40e7e6f6a",
+    "subject": "Validate out-of-order tables incrementally while parsing (#509)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 63,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "989c1a79787d63806de37934a6c2b041e1f550d8",
+    "subject": "Skip the value attempt when an array closes right after a value (#517)",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 8,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "7c978a512b9b99ac02a5abd689c10418448148b6",
+    "subject": "reject a table redefined after its parent table header (#516)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 8,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "281ca004386b83bc12d88d79c15b99c714477dc6",
+    "subject": "Place inline-table separator after the value, not the comment (#514)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 14,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "82bb211e031dc50ebf4e25465ee6144b23acd9bf",
+    "subject": "Add a native OutOfOrderTableProxy.__contains__ (#515)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 9,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "5b2b1ffbc1a62df387d7114b733a606933bea17a",
+    "subject": "Prefix every line of a multiline comment with # (#511)",
+    "src_files": [
+      "tomlkit/api.py"
+    ],
+    "diff_lines": 10,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "ea9263f9e1dfd5715fabc2951699f0ee144eced9",
+    "subject": "Limit parser nesting depth instead of crashing with RecursionError (#510)",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 58,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "afa41a570bfa26d585f851f2a081e3da80e629c9",
+    "subject": "Render self-dumping wrappers via as_string in dumps() (#508)",
+    "src_files": [
+      "tomlkit/api.py"
+    ],
+    "diff_lines": 14,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "f9b4b227f88ade30c1a95721f40eb19e237fa224",
+    "subject": "Move a value replacing a table out of the table region (#506)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 19,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "fdfbc8a18c5fd5cfdcaaf11bfd59c4151da1f2ca",
+    "subject": "Merge super tables in place instead of deep-copying on every merge (#503)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 27,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "0ad22b5d2efe17a22acaf787da4388c73e7e3fb2",
+    "subject": "Compare StringType members by identity instead of building a set (#502)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 8,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "a076a6afbe035694bd6b1cfdbd8ad7284e93b862",
+    "subject": "Fix corrupt output when adding to a dotted key inside an inline table (#500)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 39,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "eaa897d6d0300f7ffc78188c8957b98aaa5c8c65",
+    "subject": "Remove the internal TOMLChar wrapper (#492)",
+    "src_files": [
+      "tomlkit/parser.py",
+      "tomlkit/source.py",
+      "tomlkit/toml_char.py"
+    ],
+    "diff_lines": 126,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "4623b450be4184517bb03a982cfe86a3cb483463",
+    "subject": "Bulk-scan single-line string bodies (#491)",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 38,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "8571bcd13f0e68e454df9be8d33975b2f5acd44e",
+    "subject": "reject non-hex digits in \\u and \\U escapes (#501)",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 6,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "a1c5bd25b5686e4481b461f8eb336d3108376fb3",
+    "subject": "reject tab characters in bare keys (#497)",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 4,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "f8ce14b39c3bfe57f20f75fbc29cb9e5586811e7",
+    "subject": "Fix doubled comma when inserting into a comma-first array (#499)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 16,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "ce58a1dbf8692c631bd64826e60f09c45fa7fb25",
+    "subject": "Scan character runs in bulk while parsing (#490)",
+    "src_files": [
+      "tomlkit/parser.py",
+      "tomlkit/source.py"
+    ],
+    "diff_lines": 78,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "b1399c30804f599ddecceb904dc57bd71bd10b3b",
+    "subject": "reject surrogate code points in \\U unicode escapes (#493)",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 14,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "231370c1a98739d57a9ca36d710a26f19ac83570",
+    "subject": "Make Source index-based instead of materializing a char list (#489)",
+    "src_files": [
+      "tomlkit/source.py"
+    ],
+    "diff_lines": 40,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "5de48308e666db61f92441191e7b76045c32d9fb",
+    "subject": "Add native __contains__ to Container, Table and InlineTable (#487)",
+    "src_files": [
+      "tomlkit/container.py",
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 26,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "568739658e92b2836c4ead6dc029482f76bbfee8",
+    "subject": "Fix duplicated comma when removing a middle inline table element (#486)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 11,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "1d499870617c8e55b9322f99a2d64a7670f3b929",
+    "subject": "Fix inline table separator after append (#477)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 13,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "8694e4d3323df68eb325bf3d5ab7caa66f8c206a",
+    "subject": "chore: bump version to 0.15.0 and update changelog for release (#473)",
+    "src_files": [
+      "tomlkit/__init__.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "96a4d22fdd07e25742009a6bcd8a2d23e9b5574a",
+    "subject": "fix: fix a parser hang (#470)",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "2c87eafe7c852d19c1b91a1c9bed4d47bd03816f",
+    "subject": "Honor sort_keys for parsed TOML documents (#471)",
+    "src_files": [
+      "tomlkit/api.py"
+    ],
+    "diff_lines": 7,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "5495784eb11c612b28ca467e7f7e6138305df810",
+    "subject": "feat: add String.type property to retrieve the string type",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 4,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "3687d0dfbf5331965fe64e6b64127ebe19c24196",
+    "subject": "fix: update boolean function to handle both string and boolean inputs correctly",
+    "src_files": [
+      "tomlkit/api.py"
+    ],
+    "diff_lines": 4,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "6042e0ce80c8c49f325a6e60b6ee3e153669b144",
+    "subject": "feat: enhance custom encoders to accept _parent and _sort_keys parameters (#436)",
+    "src_files": [
+      "tomlkit/api.py",
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 48,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "b9d22fb8906b649f6e2d27b7f64f2d368e80c475",
+    "subject": "fix: Add DottedKey to a super table gives wrong output (#431) (#435)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 17,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "8c963db32784623f8fc076ad4ef9b6b01ab0d542",
+    "subject": "chore: update version to 0.13.3 (#423)",
+    "src_files": [
+      "tomlkit/__init__.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "fcb82ae1d9bd531e6c7c4a1f7fd6ddea5e41cf7b",
+    "subject": "fix: Missing newline at end of file with multiple array of tables can corrupt during dumping (#422)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 24,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "d4e1ecda48c6b8ae772a46af07d2cb5781d7f2bd",
+    "subject": "fix: add newline indentation after existing items in Container class (#421)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 6,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "e3b7332de2b5bd7acf56883630a50de65c6b57ce",
+    "subject": "fix: ensure unique table indices when adding items to out-of-order tables (#420)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 4,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "bd31dbd8e2762c88af534ac72cb5c48644d3b4af",
+    "subject": "fix: Dumping a subelement of a parsed toml fails starting on 4rd level of nesting (#419)",
+    "src_files": [
+      "tomlkit/api.py"
+    ],
+    "diff_lines": 6,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "62a67082374af1c34944aecf917d5fa454a09cd3",
+    "subject": "fix: Invalid serialization when overwriting out-of-order table key (#417)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 38,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "df4afc67ac465be42c05621f14306a0befb37104",
+    "subject": "Fix: reject single keys that aren't strings (#416)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 3,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "832e85579ea9029aae53ebbb1812c537abf9dd03",
+    "subject": "Fix array item removal (#409)",
+    "src_files": [
+      "tomlkit/items.py",
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 57,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "8fc73fc60a421e3192a3dba745320ac967de96f2",
+    "subject": "Aot __setitem__ not implemented fix (#413)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "1a3085c0ac4dbacf1632ba07df6fcbbeaf5911d9",
+    "subject": "Prevent repeated whitespace items in arrays (#406)",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 10,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "b73d19204139949e3a6f4d2e7ffbde4da4b51b86",
+    "subject": "Fix: Inconsistent newlines on Windows (#402)",
+    "src_files": [
+      "tomlkit/toml_file.py"
+    ],
+    "diff_lines": 1,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "94e193afd679ca8cf5b0f45b879ffa6af20cf528",
+    "subject": "feat: add .item() method to retrieve the item object (#397)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 13,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "800c829558c15c26bae514a97a70526907d388c7",
+    "subject": "[pre-commit.ci] pre-commit autoupdate (#386)",
+    "src_files": [
+      "tomlkit/__init__.py",
+      "tomlkit/items.py",
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 41,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "2777bedb901e11064b4405d9f32c11af7ae54d24",
+    "subject": "fix: register encoder's doc incorrectly mentions TypeError (#384)",
+    "src_files": [
+      "tomlkit/api.py"
+    ],
+    "diff_lines": 2,
+    "status": "EXCLUDED:non-behavioural",
+    "reason": "Source changes are identical after stripping non-behavioural elements"
+  },
+  {
+    "sha": "e6e5d3803ba2942c5e19e3c083d289009c27338c",
+    "subject": "fix: delete keys from out of order table (#379)",
+    "src_files": [
+      "tomlkit/__init__.py",
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 23,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "28fe6ec7386e3923a3e87efae8ab580138f6fcbc",
+    "subject": "fix: Empty table dumped when number of subtables > 1 (#378)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 30,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "8b288a5b1483834b0dd4c7b689033b41b57e2084",
+    "subject": "fix: Table header missing (#375)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 14,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "2344a4272a512ceb26227b29fb99a7d2068216a9",
+    "subject": "Add tomlkit.dump() example (#370)",
+    "src_files": [
+      "tomlkit/api.py"
+    ],
+    "diff_lines": 5,
+    "status": "EXCLUDED:non-behavioural",
+    "reason": "Source changes are identical after stripping non-behavioural elements"
+  },
+  {
+    "sha": "85aaf7a9231030fc3455048d78bfdabfe0a0a937",
+    "subject": "fix: keep the nested out of order table (#366)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 20,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "400057ba17dbf562fa4fe01fc26b40d7112690e4",
+    "subject": "fix: `tomlkit` 0.12.5 : Encoder contract interferes with external `TypeError`s raised in encoders (#358)",
+    "src_files": [
+      "tomlkit/exceptions.py",
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 23,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "30a22f711f10b5c6715d4c11f8d699f4fd033ef6",
+    "subject": "fix: Revert \"fix: Construction of OutOfOrderTableProxy can cause newlines to be inserted (#347)\" (#353)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 6,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "05d9be1c2b2a95a4eb3a53d999f1483dd7abae5a",
+    "subject": "fix: Test failures with Python 3.13.0a4: test_dates_behave_like_dates and test_times_behave_like_times (#349)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 15,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "c2611c555261e41e1219a675cef14dd24229c607",
+    "subject": "fix: Construction of OutOfOrderTableProxy can cause newlines to be inserted (#347)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 4,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "990e325d72b96e3d8e34d2dc5224a64a444c5d12",
+    "subject": "fix: redundant minus sign added to negative integers when multiplie by -1",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 5,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "bf01a25e26e5968c0fcb515f0513b9f88ab83e03",
+    "subject": "fix: don't add sign if the float is negative (#345)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 5,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "712dba727a50cc555880f610b76f8594c0b3af7a",
+    "subject": "fix: -1 index error when setting dotted keyFixes #332",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 4,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "0c2c30d9ac854ec58aa61512acb60d81de3eff97",
+    "subject": "fix: `|=` does not work as expected on TOMLDocumentFixes #331",
+    "src_files": [
+      "tomlkit/_types.py"
+    ],
+    "diff_lines": 20,
+    "status": "EXCLUDED:non-behavioural",
+    "reason": "Source changes are identical after stripping non-behavioural elements"
+  },
+  {
+    "sha": "b963483b8ee6bf550061b96349c26dcea8775773",
+    "subject": "fix: indent exist check before accessing its property (#328)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 1,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "238fec168d334a612e5a6cefe4437887ba6ae921",
+    "subject": "fix: Significant slowdown on nested tables depending on syntax (#324)",
+    "src_files": [
+      "tomlkit/container.py",
+      "tomlkit/items.py",
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 47,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "e9ccbe7f3eacbbe3e39d68d9bb4c3f0552f1b8f2",
+    "subject": "fix: Newline lost when updating a table (#323)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 10,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "a55af8b1269dad1673869629e6406d1f251ebf8a",
+    "subject": "[DOC] Add some docstrings (#316)",
+    "src_files": [
+      "tomlkit/container.py",
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 3,
+    "status": "EXCLUDED:non-behavioural",
+    "reason": "Source changes are identical after stripping non-behavioural elements"
+  },
+  {
+    "sha": "cfc99766fc9fc4f05c57c45487bea319e96e1eba",
+    "subject": "fix: error when overwriting a sub table",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "1b2a53f2757fd3bacbf67158e78379d1b92558b3",
+    "subject": "fix: Fix division for integers (#312)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 14,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "7ed7d3a0c962b378837c56450f1b885ad7757269",
+    "subject": "fix: Make float and int hashable",
+    "src_files": [
+      "tomlkit/__init__.py",
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 8,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "9e39a63c17e0d1435d18c0aca92ec0feec815c2a",
+    "subject": "perf: only iter on found escape sequences (#304)",
+    "src_files": [
+      "tomlkit/_utils.py"
+    ],
+    "diff_lines": 4,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "a3cb8a2b71bd70001d13e5455177d5fe96208256",
+    "subject": "feat: allow users to register custom encoders (#296)",
+    "src_files": [
+      "tomlkit/__init__.py",
+      "tomlkit/api.py",
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 50,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "5a61e5b5527a1649fdad46b17dee585d2237d041",
+    "subject": "fix: unexpectedly sort the keys when building a table",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "a63be71cb2b33bdb588592970e2c76288fd4e4f0",
+    "subject": "Release 0.11.8 (#285)",
+    "src_files": [
+      "tomlkit/__init__.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "f14e9c78b452b103efb1966262f496cc765c0283",
+    "subject": "fix(#283): Wrong result stringifying subtables and nested arrays of tables, in arrays of tables",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 23,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "fefb29f7471ad3df3df79b4821d5edef57892e3d",
+    "subject": "fix(#262): ignore the CRLF immediately following a multiple basic string opening",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 14,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "a766d3a2a25476186bfa3e5ac3b357d8b4549e4b",
+    "subject": "fix(#256): remove the extra indentation added when parsing",
+    "src_files": [
+      "tomlkit/items.py",
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 32,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "2a3b2d195bde0036523dcbe12c36065b73d7d525",
+    "subject": "Add types to the `append()` methods of the `Table` and `InlineTable` classes (#282)",
+    "src_files": [
+      "tomlkit/container.py",
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 12,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "3f48f7eeded881ad0e316a5994f1995ed41326ff",
+    "subject": "Release 0.11.7 (#278)",
+    "src_files": [
+      "tomlkit/__init__.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "14230ea7791bee8542e56ccd7efba34ba584f004",
+    "subject": "fix: the return type is wrong for int +/- float (#277)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 24,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "02409956180fc528e8b1666134ab73ad965e4677",
+    "subject": "fix: error occurs when trying to get str(array)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 3,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "18a527758bfa3f8fe65e2f45f61df42f2f5af0c1",
+    "subject": "Missing type argument on `IO` (#272)",
+    "src_files": [
+      "tomlkit/api.py"
+    ],
+    "diff_lines": 2,
+    "status": "EXCLUDED:non-behavioural",
+    "reason": "Source changes are identical after stripping non-behavioural elements"
+  },
+  {
+    "sha": "2b5aafbdfc086dbfb4c6fa3813d995ebc4da832f",
+    "subject": "fix: parse datetime followed by a space (#268)",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 9,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "588eccee1390ce1b14e62f6d908d88171ee0859a",
+    "subject": "fix: delete inline table element does not leave trailing sep (#267)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 10,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "713443620b1ac52f0070144bcb88c844f963b1a8",
+    "subject": "fix: unwrap() for container children values (#266)",
+    "src_files": [
+      "tomlkit/container.py",
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 13,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "b49a3e4ae4f6c55a924a525dcbc682ae1532b49f",
+    "subject": "fix: parse empty quoted table name (#265)",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "93bec6f94f4fb4b6dedf57078fb0c73ab3b65c8e",
+    "subject": "Configure Read The Docs (#251)",
+    "src_files": [
+      "tomlkit/api.py"
+    ],
+    "diff_lines": 2,
+    "status": "EXCLUDED:non-behavioural",
+    "reason": "Source changes are identical after stripping non-behavioural elements"
+  },
+  {
+    "sha": "a0c03c1e152194af788698ca70e0d01d06b156a5",
+    "subject": "fix: array getitem now returns tomlkit.Item directly",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 6,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "4bf5eddf7b3eafc3882ffb61c8b478f6968b37fd",
+    "subject": "release v0.11.6 (#247)",
+    "src_files": [
+      "tomlkit/__init__.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "b277474d3fe67de43492788e35ac00f9949caa84",
+    "subject": "fix: escape backslashes in basic strings",
+    "src_files": [
+      "tomlkit/_utils.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "903c2e95193a01d2b6abe64e5a768000cd04f619",
+    "subject": "fix: auto-determine if a table is a super table if not specified explicitly (#246)",
+    "src_files": [
+      "tomlkit/api.py",
+      "tomlkit/items.py",
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 18,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "cb822da80a53497033b5f66817fb2bbf0479fbe6",
+    "subject": "fix: allow broader type for toml file path value (#243)",
+    "src_files": [
+      "tomlkit/toml_file.py"
+    ],
+    "diff_lines": 12,
+    "status": "EXCLUDED:non-behavioural",
+    "reason": "Source changes are identical after stripping non-behavioural elements"
+  },
+  {
+    "sha": "86b61f2e304a88499a19707939cfbfc4ba736c57",
+    "subject": "Release 0.11.5 (#242)",
+    "src_files": [
+      "tomlkit/__init__.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "5bc89eda4e1dd4bab05ec0d20e5962d56d1786d9",
+    "subject": "fix: Clear the existing table header (#234)",
+    "src_files": [
+      "tomlkit/container.py",
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 4,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "7194daeb5a951a2c1d54bd909968323912f941d8",
+    "subject": "fix: adding table to inline table",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 10,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "4cf820705b4a3410c03c78724d1768dc91d16cfc",
+    "subject": "fix: rendering table in nested arrays (#236)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 6,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "a0f2309cc87c084814973287be0181ac14d2e5a8",
+    "subject": "fix: fix a bug that escape chars are lost after concat with another string (#235)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 16,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "80f958c6b1914735aef61db1d0a045a61fca4eed",
+    "subject": "fix: type annotation of unwrap() and datetime parsing (#229)",
+    "src_files": [
+      "tomlkit/container.py",
+      "tomlkit/items.py",
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 35,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "6720e246357851009f7cf900beaf6299a855a2aa",
+    "subject": "Release 0.11.4 (#228)",
+    "src_files": [
+      "tomlkit/__init__.py",
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 12,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "ade661943417d54ee722e0011dc2d98d3409a48e",
+    "subject": "Fix memleak by dropping lru cache (#227)",
+    "src_files": [
+      "tomlkit/items.py",
+      "tomlkit/toml_char.py"
+    ],
+    "diff_lines": 37,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "21f51a50a075f6bcc6cde9814ec7a5fa46ab655c",
+    "subject": "chore: prepare for release 0.11.3 (#224)",
+    "src_files": [
+      "tomlkit/__init__.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "97487d2b91b736a425499c7382a635539d910828",
+    "subject": "fix: fix a regression of adding comment only line to an array",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 9,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "a157e59aca84764df0e16506caa6028773bf8504",
+    "subject": "fix: items.Array __init__ didn't ignore Null that _group_values (#221)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 4,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "957a98fe75313d2389d1e3d152506ba690ec026f",
+    "subject": "Prepare for release 0.11.2 (#220)",
+    "src_files": [
+      "tomlkit/__init__.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "f5b1cdc8022d4f2f1c37f344daa49618e19731dc",
+    "subject": "fix: don't add header when removing items from a supertable (#219)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 3,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "a639224f3b7d49f45576c2c036ae4bc90e4dec77",
+    "subject": "fix: change items.py to add float and int (#215)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 4,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "e15bb79401517ca28013454662741ca9b0646fab",
+    "subject": "Release 0.11.1 (#209)",
+    "src_files": [
+      "tomlkit/__init__.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "01e56ea366e5eea2b4b9ef436ad6c99a0b8569ec",
+    "subject": "Keep consistent line endings when changing files and use os.linesep as default for new files (#201)",
+    "src_files": [
+      "tomlkit/toml_file.py"
+    ],
+    "diff_lines": 29,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "296be1458c0ce496081abdee22376c4f762f9864",
+    "subject": "fix: reraise KeyAlreadyPresent as ParseError (#208)",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 10,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "8cccd02ee59d1957acd5dc6536066d2454f37ed9",
+    "subject": "fix: remove empty tables from out-of-order table proxy (#206)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 34,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "0b95c6e1ab4ad95249bca82c59c90db8c21dc37c",
+    "subject": "refactor: Fix typo in function name (#203)",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 10,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "1cb4c25288184905807619da1eb2d3576cef2a64",
+    "subject": "Remove the quotes in string.unwrap()",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "e91fc38b312e473a414733c13f56855a38c5c226",
+    "subject": "Bump version to 0.11.0 (#194)",
+    "src_files": [
+      "tomlkit/__init__.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "deac74db82714688a230a0ec142c1ea7ef4ad42f",
+    "subject": "Add unwrap method to recursive convert to plain old python objects (#187)",
+    "src_files": [
+      "tomlkit/check.py",
+      "tomlkit/container.py",
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 111,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "1621fa5d3375641ecd5efd505841257400e58e95",
+    "subject": "Fix the error message of KeyAlreadyPresent",
+    "src_files": [
+      "tomlkit/exceptions.py"
+    ],
+    "diff_lines": 1,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "352de2461814e7dd28d1f38e2f139681497dc65c",
+    "subject": "Add type definitions for item() (#190)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 66,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "5118514fa1f193ff92c3d26b4d4da2f0a94f70e2",
+    "subject": "fix the astimezone the replace methods (#189)",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 42,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "17059ed05905af5a9c7b8ec8bc37fffd1e14d8c9",
+    "subject": "Fix typos",
+    "src_files": [
+      "tomlkit/parser.py",
+      "tomlkit/toml_char.py"
+    ],
+    "diff_lines": 4,
+    "status": "EXCLUDED:non-behavioural",
+    "reason": "Source changes are identical after stripping non-behavioural elements"
+  },
+  {
+    "sha": "757e7069824e1faa151db6be019fa305a3958602",
+    "subject": "Fix the bug that comments are appended with comma when rendering a multiline array",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 12,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "e773d00129d232d2508e09bdb8856cf43295c19e",
+    "subject": "Fix linting errors",
+    "src_files": [
+      "tomlkit/api.py"
+    ],
+    "diff_lines": 4,
+    "status": "EXCLUDED:non-behavioural",
+    "reason": "Source changes are identical after stripping non-behavioural elements"
+  },
+  {
+    "sha": "03ad1124e8fb531debc394cac155a38ec1389831",
+    "subject": "Fix the only child detection when creating tables.",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 8,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "6f7cdf0ae17e41a90d56bd843203b646f0158b34",
+    "subject": "fix values with prefix true/false being parsed to booleans.",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 13,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "017b4d8ef3f4d48b9433355bac563457e42d86f8",
+    "subject": "fix values starting with t or f being parsed as booleans.",
+    "src_files": [
+      "tomlkit/source.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "3c3f4695c376cfb74b50704f923b5f3144e57360",
+    "subject": "missing argument for UnexpectedCharError",
+    "src_files": [
+      "tomlkit/source.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "2337e1a0d260a5b36b3482d287196820b4f3eff6",
+    "subject": "Fix float test cases",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 15,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "aa920876b03c529d44402a8a1b151d99665265cc",
+    "subject": "Fix bug in string output of empty array",
+    "src_files": [
+      "tomlkit/items.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "88667d2eda308b8a7194994f0efb2e4bd9ea4b6b",
+    "subject": "Fix missing re-export of public API in __init__.py",
+    "src_files": [
+      "tomlkit/__init__.py"
+    ],
+    "diff_lines": 24,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "953fd3be54b95adaa4f07b5bfb58a480c80023c7",
+    "subject": "Fix top level keys handling when building",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 4,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "f2443220bd7f767250ba4e6358f239454c42474c",
+    "subject": "Fix table representation for dotted keys",
+    "src_files": [
+      "tomlkit/container.py"
+    ],
+    "diff_lines": 2,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "8e0fa128ab06254f5f3230e652a85ca7ac634d59",
+    "subject": "Fix an internal error for empty tables after existing ones",
+    "src_files": [
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 1,
+    "status": "candidate",
+    "reason": ""
+  },
+  {
+    "sha": "314072fac304f88392e9e2cfcfade349529e15a5",
+    "subject": "Fix indent for nested table elements when updating",
+    "src_files": [
+      "tomlkit/items.py",
+      "tomlkit/parser.py"
+    ],
+    "diff_lines": 10,
+    "status": "candidate",
+    "reason": ""
+  }
+]
