@@ -3,7 +3,7 @@
   "repo": "https://github.com/andialbrecht/sqlparse",
   "head": "60cdc649726bf1bc4f1b336050560b336da715ec",
   "run_time": "2026-09-26T15:01:46+00:00",
-  "ledger_time": "2026-09-26T15:07:13+00:00",
+  "ledger_time": "2026-09-26T15:22:19+00:00",
   "curated": {
     "sha256": "fa3d4b23160e245c30c65694c9414ffac50379011e0dc23d62e5fbdaead2c9e3",
     "timestamp": "2026-09-26T14:49:00+00:00"
@@ -344,12 +344,12 @@
       "sha": "8c24779e027e92a1ed379fc271e20f540b0f3d20",
       "status": "NO CHANGE FOUND",
       "line": "JSON operators (-> and ->>) in SELECT caused incorrect reindent alignment; fixed by grouping JSON-operator expressions before indenting; the check found no observable difference in current code \u2014 still exposed.",
-      "reason": "check: /home/aryan/ibm_bob_hack/antibody/.antibody/sqlparse/checks/8c24779e02.py",
+      "reason": "check: .antibody/sqlparse/checks/8c24779e02.py",
       "link": "",
       "catching_tests": [],
       "proof_code": null,
       "probe_output": {
-        "check": "/home/aryan/ibm_bob_hack/antibody/.antibody/sqlparse/checks/8c24779e02.py",
+        "check": ".antibody/sqlparse/checks/8c24779e02.py",
         "with_fix": "DIFFERENCE FOUND: indents=[0, 7] vs all-equal\n",
         "without_fix": "DIFFERENCE FOUND: indents=[0, 7] vs all-equal\n"
       }

@@ -175,3 +175,22 @@ class TestNowCaught:
         assert ledger["stats"]["caught_after"] == 1
         assert (tmp_path / "audits" / name / "test_fix.py").exists()
         assert not (tmp_path / "audits" / name / "test_unproven.py").exists()
+
+
+
+class TestRelativePaths:
+
+    def test_check_path_shown_relative_to_repo_root(self, tmp_path):
+        runner = _load_runner()
+        check = runner.ROOT / ".antibody" / "demo" / "checks" / "abc.py"
+        assert runner._rel_to_root(str(check)) == ".antibody/demo/checks/abc.py"
+        assert runner._rel_to_root("/elsewhere/x.py") == "/elsewhere/x.py"
+
+        sha = "b" * 40
+        (tmp_path / f"{sha}.json").write_text(json.dumps({
+            "verdict": "NO CHANGE FOUND", "check": str(check),
+            "output_with_fix": "1", "output_without_fix": "1"}))
+        lr = runner._map_status(_result(sha, "ESCAPED"), None, tmp_path, {}, {})
+        assert lr["status"] == "NO CHANGE FOUND"
+        assert lr["reason"] == "check: .antibody/demo/checks/abc.py"
+        assert lr["probe_output"]["check"] == ".antibody/demo/checks/abc.py"

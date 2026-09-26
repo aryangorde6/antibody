@@ -1511,7 +1511,7 @@ def _do_probe(name: str, sha: str, check_file: Path) -> None:
         verdict = "INVALID (not deterministic)"
         result_data = {
             "verdict": verdict,
-            "check": str(check_file),
+            "check": _rel_to_root(check_file),
             "output_with_fix": None,
             "output_without_fix": None,
         }
@@ -1524,7 +1524,7 @@ def _do_probe(name: str, sha: str, check_file: Path) -> None:
         verdict = "INVALID (prints nothing)"
         result_data = {
             "verdict": verdict,
-            "check": str(check_file),
+            "check": _rel_to_root(check_file),
             "output_with_fix": output_with_fix,
             "output_without_fix": None,
         }
@@ -1542,7 +1542,7 @@ def _do_probe(name: str, sha: str, check_file: Path) -> None:
             verdict = f"INVALID (patch did not apply: {fail_reason})"
             result_data = {
                 "verdict": verdict,
-                "check": str(check_file),
+                "check": _rel_to_root(check_file),
                 "output_with_fix": output_with_fix,
                 "output_without_fix": None,
             }
@@ -1558,7 +1558,7 @@ def _do_probe(name: str, sha: str, check_file: Path) -> None:
             verdict = "INVALID (not deterministic)"
             result_data = {
                 "verdict": verdict,
-                "check": str(check_file),
+                "check": _rel_to_root(check_file),
                 "output_with_fix": output_with_fix,
                 "output_without_fix": None,
             }
@@ -1571,7 +1571,7 @@ def _do_probe(name: str, sha: str, check_file: Path) -> None:
             verdict = "INVALID (prints nothing)"
             result_data = {
                 "verdict": verdict,
-                "check": str(check_file),
+                "check": _rel_to_root(check_file),
                 "output_with_fix": output_with_fix,
                 "output_without_fix": output_without_fix,
             }
@@ -1594,7 +1594,7 @@ def _do_probe(name: str, sha: str, check_file: Path) -> None:
         verdict = "INVALID (never reaches the changed code)"
         result_data = {
             "verdict": verdict,
-            "check": str(check_file),
+            "check": _rel_to_root(check_file),
             "output_with_fix": output_with_fix,
             "output_without_fix": output_without_fix,
         }
@@ -1616,7 +1616,7 @@ def _do_probe(name: str, sha: str, check_file: Path) -> None:
 
     result_data = {
         "verdict": verdict,
-        "check": str(check_file),
+        "check": _rel_to_root(check_file),
         "output_with_fix": output_with_fix,
         "output_without_fix": output_without_fix,
     }
@@ -2109,6 +2109,17 @@ def _isodate() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
 
 
+def _rel_to_root(path) -> str:
+    """A path under the repository root, written relative to it, so no machine's home
+    directory ends up in probe files, the ledger or the page."""
+    if not path:
+        return ""
+    try:
+        return str(Path(path).resolve().relative_to(ROOT.resolve()))
+    except (ValueError, OSError):
+        return str(path)
+
+
 def _is_not_a_bug(entry: dict | None) -> bool:
     """True if a curated.json entry's verdict is NOT-A-BUG (the pinned
     format); "NOT A BUG" is accepted too."""
@@ -2186,7 +2197,7 @@ def _map_status(row: dict, proofs_dir: Path | None, probes_dir: Path | None,
         if probe_verdict == "NO CHANGE FOUND":
             out_w = probe_output.get("output_with_fix", "")
             out_wo = probe_output.get("output_without_fix", "")
-            check = probe_output.get("check", "")
+            check = _rel_to_root(probe_output.get("check", ""))
             return {
                 "sha": sha,
                 "status": "NO CHANGE FOUND",
@@ -2200,7 +2211,7 @@ def _map_status(row: dict, proofs_dir: Path | None, probes_dir: Path | None,
         elif probe_verdict == "CHANGED":
             out_w = probe_output.get("output_with_fix", "")
             out_wo = probe_output.get("output_without_fix", "")
-            check = probe_output.get("check", "")
+            check = _rel_to_root(probe_output.get("check", ""))
             return {
                 "sha": sha,
                 "status": "STILL EXPOSED",
@@ -2600,7 +2611,7 @@ def _build_row_html(lr: dict, repo_url: str) -> str:
     if proof_code:
         evidence_parts.append(f'<strong>New test:</strong><pre>{_e(proof_code[:2000])}</pre>')
     if probe_output:
-        check = probe_output.get("check", "")
+        check = _rel_to_root(probe_output.get("check", ""))
         with_fix = probe_output.get("with_fix", "")
         without_fix = probe_output.get("without_fix", "")
         evidence_parts.append(
