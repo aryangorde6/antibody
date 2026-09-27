@@ -90,4 +90,4 @@ These changes to Bob's files were made by hand, not by Bob.
 
 **After task 06:** in this file, the two commands above restored to the ones actually run (their escaping was lost), the task 06 rows and sentence added, and "the subagents for three fixes" instead of "three fixes"; in README.md, the opening sentence (it claimed "most projects never check", which nothing here measures).
 
-**After task 07:** in README.md, the requirements line now says the runner needs Linux, and WSL on Windows (the review's finding 1).
+**After task 07:** in README.md, the requirements line now says the runner needs Linux, and WSL on Windows (the review's finding 1); the CI badge under the title; and a sentence on the task 07 review under "Built with IBM Bob".

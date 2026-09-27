@@ -1,5 +1,7 @@
 # Antibody
 
+[![Antibody gate](https://github.com/aryangorde6/antibody/actions/workflows/antibody.yml/badge.svg)](https://github.com/aryangorde6/antibody/actions/workflows/antibody.yml)
+
 Every project fixes bugs, but a fix only stays fixed if some test notices when it goes away.
 Antibody puts a project's past bug fixes back, one at a time, on today's code and runs the project's own tests; if no test notices a fix being taken out, that bug can come back unnoticed.
 
@@ -52,6 +54,7 @@ The runner handles the parts that need determinism:
 - Re-checking every proof file to confirm the test still catches the bug.
 
 Bob session exports are in [`bob_sessions/`](bob_sessions/).
+The last task (07) was Bob reviewing the finished repository read-only, on a second team member's account; each finding and what we did with it is in [`bob_sessions/07-review/triage.md`](bob_sessions/07-review/triage.md).
 See [`BOB.md`](BOB.md) for a detailed map of every file Bob created or edited.
 
 ## Data sources
