@@ -12,7 +12,8 @@ Live ledger page: <https://antibody-ledger.vercel.app/sqlparse/>
 
 ## How to run
 
-Requires git, Python 3.12, and [uv](https://github.com/astral-sh/uv).
+Requires Linux (tested on Ubuntu), git, Python 3.12, and [uv](https://github.com/astral-sh/uv).
+The runner imports Unix-only modules (`fcntl`, `resource`), so on Windows, run it inside WSL.
 
 **With IBM Bob:** switch Bob to the Antibody mode and ask it to audit a repository (the recurrence-audit skill handles the full workflow).
 

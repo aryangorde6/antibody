@@ -20,6 +20,8 @@ grep -h '\[x\] Create' bob_sessions/04-mode-skill/*.md | sort -u
 
 The folder `bob_sessions/03-ledger-gate/` holds two tasks: **03** (task id `a5d4f98e`) and **03b** (task id `0baf8d72`).
 **05b** is a second, shorter audit task (task id `c0c55b61`), and **06** wrote this file and README.md (task id `e8127dd7`).
+**07** is a read-only review of the finished repository, run by Samruddhi on her own account in Ask mode (task id `28143b43`); it edited no files.
+Its seven findings, and what was done with each, are in `bob_sessions/07-review/triage.md`.
 
 | File | Task(s) |
 |------|---------|
@@ -87,3 +89,5 @@ These changes to Bob's files were made by hand, not by Bob.
 **After task 05b:** `antibody-accepted.yaml` written by hand (one entry, `e58781dd63`, with the reason); and in `antibody.py`'s page style, links use the accent colour and, under 480 px, cells pad less and badges wrap, so the table fits a phone; the sqlparse page was re-rendered from the same `ledger.json`.
 
 **After task 06:** in this file, the two commands above restored to the ones actually run (their escaping was lost), the task 06 rows and sentence added, and "the subagents for three fixes" instead of "three fixes"; in README.md, the opening sentence (it claimed "most projects never check", which nothing here measures).
+
+**After task 07:** in README.md, the requirements line now says the runner needs Linux, and WSL on Windows (the review's finding 1).
