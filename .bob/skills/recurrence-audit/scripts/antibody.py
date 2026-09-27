@@ -222,7 +222,7 @@ def cmd_setup(args: argparse.Namespace) -> None:
         print(f"Target directory {tgt} already exists; skipping clone.")
     else:
         print(f"Cloning {git_url} → {tgt} …")
-        run(["git", "clone", "--recurse-submodules", git_url, str(tgt)])
+        run(["git", "clone", "--recurse-submodules", "--", git_url, str(tgt)])
 
     # Checkout rev
     if rev:
@@ -2599,7 +2599,7 @@ def _build_row_html(lr: dict, repo_url: str) -> str:
 
     # Issue link
     issue_cell = ""
-    if link:
+    if link and link.startswith("https://"):
         label = link.rstrip("/").rsplit("/", 1)[-1]
         issue_cell = f'<a href="{_e(link)}" target="_blank" rel="noopener">{_e(label)}</a>'
 
@@ -3203,6 +3203,23 @@ def cmd_gate(args: argparse.Namespace) -> None:
 # CLI
 # ---------------------------------------------------------------------------
 
+_NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+_SHA_RE = re.compile(r"[0-9a-fA-F]{7,40}")
+
+
+def _validate_args(args: argparse.Namespace) -> None:
+    """Reject arguments that could reach outside targets/ and .antibody/, or be read as git options."""
+    if not _NAME_RE.fullmatch(args.name):
+        die(f"invalid target name {args.name!r}: use letters, digits, '.', '_' or '-'")
+    sha = getattr(args, "sha", None)
+    if sha is not None and not _SHA_RE.fullmatch(sha):
+        die(f"invalid sha {sha!r}: expected 7 to 40 hex characters")
+    for label in ("git_url", "rev"):
+        value = getattr(args, label, None)
+        if value and value.startswith("-"):
+            die(f"invalid {label} {value!r}: must not start with '-'")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="antibody",
@@ -3249,6 +3266,7 @@ def main() -> None:
     p_gate.add_argument("name", help="Target name")
 
     args = parser.parse_args()
+    _validate_args(args)
 
     if args.command == "setup":
         cmd_setup(args)

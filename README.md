@@ -35,6 +35,11 @@ Steps, in order: `setup`, `candidates`, `run`, `probe`, `prove`, `ledger`, `gate
 - "Caught" means a test noticed the regression, not that the test is perfect or complete.
 - Antibody works with Python and pytest projects only.
 
+## Running it safely
+
+- Antibody installs the audited project and runs its tests, so it runs that project's code: audit projects you would run anyway, or run it in CI or a container.
+- Bob reads the project's issue and pull-request threads, which anyone can write. No status comes from Bob's word (the runner proves each one), but when auditing a project you don't trust, approve Bob's commands one at a time instead of auto-approving them.
+
 ## Before the event
 
 Before the hackathon started we ran our own script — no Bob — against 18 Python libraries and published the results at <https://github.com/aryangorde6/antibody-census>.
@@ -65,7 +70,7 @@ See [`BOB.md`](BOB.md) for a detailed map of every file Bob created or edited.
 | [GitHub Advisory Database](https://github.com/advisories) | CC-BY 4.0 |
 | [PyPI](https://pypi.org/) | Used to install test dependencies |
 
-No personal data is kept: names, handles, and email addresses are dropped when threads are saved, and thread text stays on the machine that ran the audit, out of the repository.
+Saved threads leave out author names, and @handles and email addresses are removed from their text; thread text stays on the machine that ran the audit, out of the repository.
 
 ## Licence
 
